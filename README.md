@@ -96,7 +96,7 @@ The app syncs three main entity types from the OpenKIS server:
 
 ## Server Compatibility
 
-The app connects to any standard OpenKIS server via these endpoints:
+The app connects to any standard OpenKIS server via these endpoints (these below are just examples):
 
 - `openkis_json.php?mod=caves` — Cave data
 - `openkis_json.php?mod=springs` — Spring data
