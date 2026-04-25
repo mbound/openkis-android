@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="openkis_primary">#2E7D32</color>
+    <color name="openkis_primary_dark">#1B5E20</color>
+    <color name="openkis_secondary">#5D4037</color>
+    <color name="openkis_accent">#FF8F00</color>
+    <color name="cave_marker">#D32F2F</color>
+    <color name="spring_marker">#1976D2</color>
+    <color name="artificial_marker">#7B1FA2</color>
+</resources>
