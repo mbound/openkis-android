@@ -3,9 +3,15 @@
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
-    android:viewportHeight="24"
-    android:tint="#D32F2F">
+    android:viewportHeight="24">
+    <!-- Inverted triangle (standard speleological cave symbol) -->
     <path
-        android:fillColor="@android:color/white"
-        android:pathData="M12,2L2,12h3v8h6v-6h2v6h6v-8h3L12,2z"/>
+        android:fillColor="#D32F2F"
+        android:pathData="M4,4 L20,4 L12,22 Z"/>
+    <!-- Thin outline for contrast -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.8"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M4,4 L20,4 L12,22 Z"/>
 </vector>

@@ -1,7 +1,9 @@
 package org.openkis.android.ui.map
 
-import android.graphics.drawable.BitmapDrawable
+import android.Manifest
 import android.graphics.drawable.Drawable
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +23,6 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
@@ -53,6 +54,8 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @Composable
 fun MapScreen(
@@ -65,8 +68,32 @@ fun MapScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showLayerPanel by remember { mutableStateOf(false) }
+    var locationEnabled by remember { mutableStateOf(false) }
+    val mapViewRef = remember { mutableStateOf<MapView?>(null) }
+    val locationOverlayRef = remember { mutableStateOf<MyLocationNewOverlay?>(null) }
 
     Configuration.getInstance().userAgentValue = context.packageName
+
+    // Location permission launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            locationEnabled = true
+            locationOverlayRef.value?.enableMyLocation()
+            locationOverlayRef.value?.enableFollowLocation()
+        }
+    }
+
+    // Clean up location overlay when leaving the screen
+    DisposableEffect(Unit) {
+        onDispose {
+            locationOverlayRef.value?.disableMyLocation()
+            locationOverlayRef.value?.disableFollowLocation()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -76,14 +103,25 @@ fun MapScreen(
                     setTileSource(TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
                     controller.setZoom(6.0)
-                    // Default center on Italy
                     controller.setCenter(GeoPoint(42.5, 12.5))
                     minZoomLevel = 3.0
                     maxZoomLevel = 19.0
+
+                    // Set up location overlay
+                    val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), this)
+                    locationOverlayRef.value = locationOverlay
+                    overlays.add(locationOverlay)
+
+                    mapViewRef.value = this
                 }
             },
             update = { mapView ->
+                // Preserve the location overlay, clear everything else
+                val locationOverlay = locationOverlayRef.value
                 mapView.overlays.clear()
+                if (locationOverlay != null) {
+                    mapView.overlays.add(locationOverlay)
+                }
 
                 fun createIcon(drawableRes: Int, tintColor: Color): Drawable {
                     val drawable = ContextCompat.getDrawable(context, drawableRes)!!.mutate()
@@ -160,7 +198,7 @@ fun MapScreen(
             }
         )
 
-        // Layer toggle FAB
+        // FAB column (layers + my location)
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -172,6 +210,39 @@ fun MapScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
                 Icon(Icons.Default.Layers, "Layers")
+            }
+
+            SmallFloatingActionButton(
+                onClick = {
+                    if (locationEnabled) {
+                        // Already enabled — center on current location
+                        locationOverlayRef.value?.enableFollowLocation()
+                        locationOverlayRef.value?.myLocation?.let { loc ->
+                            mapViewRef.value?.controller?.animateTo(loc, 15.0, 1000L)
+                        }
+                    } else {
+                        // Request permission
+                        permissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    }
+                },
+                containerColor = if (locationEnabled)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.surface
+            ) {
+                Icon(
+                    Icons.Default.MyLocation,
+                    contentDescription = "My Location",
+                    tint = if (locationEnabled)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurface
+                )
             }
         }
 
