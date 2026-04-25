@@ -114,7 +114,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         onValueChange = { urlInput = it },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text("Server URL") },
-                        placeholder = { Text("https://your-openkis-server.com/") },
+                        placeholder = { Text("https://catastogrotte-piemonte.net/") },
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(8.dp))

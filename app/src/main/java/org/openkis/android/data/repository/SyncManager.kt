@@ -24,6 +24,7 @@ class SyncManager @Inject constructor(
     private val dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
 ) {
     companion object {
+        const val DEFAULT_SERVER_URL = "https://catastogrotte-piemonte.net"
         private val KEY_SERVER_URL = stringPreferencesKey("server_url")
         private val KEY_LAST_SYNC = longPreferencesKey("last_sync")
         private val KEY_OFFLINE_MODE = stringPreferencesKey("offline_mode")
@@ -33,7 +34,7 @@ class SyncManager @Inject constructor(
     }
 
     val serverUrl: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_SERVER_URL] ?: ""
+        prefs[KEY_SERVER_URL] ?: DEFAULT_SERVER_URL
     }
 
     val lastSync: Flow<Long> = context.dataStore.data.map { prefs ->
@@ -89,7 +90,7 @@ class SyncManager @Inject constructor(
     }
 
     suspend fun syncAll(): SyncResult {
-        val url = context.dataStore.data.first()[KEY_SERVER_URL] ?: ""
+        val url = context.dataStore.data.first()[KEY_SERVER_URL] ?: DEFAULT_SERVER_URL
         if (url.isBlank()) return SyncResult.Error("Server URL not configured")
 
         dynamicBaseUrlInterceptor.baseUrl = url
