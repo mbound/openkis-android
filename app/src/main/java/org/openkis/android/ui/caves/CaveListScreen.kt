@@ -46,6 +46,7 @@ fun CaveListScreen(
     val items by viewModel.items.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedType by viewModel.selectedType.collectAsState()
+    val enabledTypes by viewModel.enabledTypes.collectAsState()
 
     Scaffold(
         topBar = {
@@ -82,7 +83,7 @@ fun CaveListScreen(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ItemType.entries.forEach { type ->
+                ItemType.entries.filter { it in enabledTypes }.forEach { type ->
                     FilterChip(
                         selected = selectedType == type,
                         onClick = { viewModel.setSelectedType(type) },

@@ -15,6 +15,7 @@ import org.openkis.android.data.local.entity.ArtificialEntity
 import org.openkis.android.data.local.entity.CaveEntity
 import org.openkis.android.data.local.entity.SpringEntity
 import org.openkis.android.data.repository.CaveRepository
+import org.openkis.android.data.repository.SyncManager
 import javax.inject.Inject
 
 enum class ItemType(val label: String) {
@@ -37,7 +38,8 @@ data class CaveListItem(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CavesViewModel @Inject constructor(
-    private val repository: CaveRepository
+    private val repository: CaveRepository,
+    syncManager: SyncManager
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -46,26 +48,44 @@ class CavesViewModel @Inject constructor(
     private val _selectedType = MutableStateFlow(ItemType.CAVES)
     val selectedType: StateFlow<ItemType> = _selectedType.asStateFlow()
 
-    val items: StateFlow<List<CaveListItem>> = combine(_searchQuery, _selectedType) { query, type ->
-        query to type
-    }.flatMapLatest { (query, type) ->
-        when (type) {
-            ItemType.CAVES -> {
-                val flow = if (query.isBlank()) repository.getAllCaves() else repository.searchCaves(query)
-                flow.flatMapLatest { caves ->
-                    kotlinx.coroutines.flow.flowOf(caves.map { it.toListItem() })
+    val enabledTypes: StateFlow<Set<ItemType>> = combine(
+        syncManager.showCaves,
+        syncManager.showSprings,
+        syncManager.showArtificials
+    ) { caves, springs, artificials ->
+        buildSet {
+            if (caves) add(ItemType.CAVES)
+            if (springs) add(ItemType.SPRINGS)
+            if (artificials) add(ItemType.ARTIFICIALS)
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, ItemType.entries.toSet())
+
+    val items: StateFlow<List<CaveListItem>> = combine(
+        _searchQuery, _selectedType, enabledTypes
+    ) { query, type, enabled ->
+        Triple(query, type, enabled)
+    }.flatMapLatest { (query, type, enabled) ->
+        if (type !in enabled) {
+            kotlinx.coroutines.flow.flowOf(emptyList())
+        } else {
+            when (type) {
+                ItemType.CAVES -> {
+                    val flow = if (query.isBlank()) repository.getAllCaves() else repository.searchCaves(query)
+                    flow.flatMapLatest { caves ->
+                        kotlinx.coroutines.flow.flowOf(caves.map { it.toListItem() })
+                    }
                 }
-            }
-            ItemType.SPRINGS -> {
-                val flow = if (query.isBlank()) repository.getAllSprings() else repository.searchSprings(query)
-                flow.flatMapLatest { springs ->
-                    kotlinx.coroutines.flow.flowOf(springs.map { it.toListItem() })
+                ItemType.SPRINGS -> {
+                    val flow = if (query.isBlank()) repository.getAllSprings() else repository.searchSprings(query)
+                    flow.flatMapLatest { springs ->
+                        kotlinx.coroutines.flow.flowOf(springs.map { it.toListItem() })
+                    }
                 }
-            }
-            ItemType.ARTIFICIALS -> {
-                val flow = if (query.isBlank()) repository.getAllArtificials() else repository.searchArtificials(query)
-                flow.flatMapLatest { arts ->
-                    kotlinx.coroutines.flow.flowOf(arts.map { it.toListItem() })
+                ItemType.ARTIFICIALS -> {
+                    val flow = if (query.isBlank()) repository.getAllArtificials() else repository.searchArtificials(query)
+                    flow.flatMapLatest { arts ->
+                        kotlinx.coroutines.flow.flowOf(arts.map { it.toListItem() })
+                    }
                 }
             }
         }

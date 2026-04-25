@@ -1,5 +1,6 @@
 package org.openkis.android.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -28,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -54,6 +57,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val serverUrl by viewModel.serverUrl.collectAsState()
     val lastSync by viewModel.lastSync.collectAsState()
     val offlineMode by viewModel.offlineMode.collectAsState()
+    val showCaves by viewModel.showCaves.collectAsState()
+    val showSprings by viewModel.showSprings.collectAsState()
+    val showArtificials by viewModel.showArtificials.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var urlInput by remember(serverUrl) { mutableStateOf(serverUrl) }
 
@@ -220,6 +226,49 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 }
             }
 
+            // Data types visibility
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Visibility,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = "Visible Data Types",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Choose which types of data to display on the map and in the browse list",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    DataTypeToggle(
+                        label = "Natural Caves",
+                        checked = showCaves,
+                        onCheckedChange = { viewModel.setShowCaves(it) }
+                    )
+                    DataTypeToggle(
+                        label = "Karst Springs",
+                        checked = showSprings,
+                        onCheckedChange = { viewModel.setShowSprings(it) }
+                    )
+                    DataTypeToggle(
+                        label = "Artificial Cavities",
+                        checked = showArtificials,
+                        onCheckedChange = { viewModel.setShowArtificials(it) }
+                    )
+                }
+            }
+
             HorizontalDivider()
 
             // Clear cache
@@ -268,5 +317,22 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+private fun DataTypeToggle(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 4.dp)
+        )
     }
 }

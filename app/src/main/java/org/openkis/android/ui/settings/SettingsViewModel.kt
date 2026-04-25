@@ -35,6 +35,15 @@ class SettingsViewModel @Inject constructor(
     val offlineMode: StateFlow<Boolean> = syncManager.offlineMode
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val showCaves: StateFlow<Boolean> = syncManager.showCaves
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val showSprings: StateFlow<Boolean> = syncManager.showSprings
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val showArtificials: StateFlow<Boolean> = syncManager.showArtificials
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
     fun setServerUrl(url: String) {
         viewModelScope.launch {
             syncManager.setServerUrl(url)
@@ -45,6 +54,18 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             syncManager.setOfflineMode(enabled)
         }
+    }
+
+    fun setShowCaves(enabled: Boolean) {
+        viewModelScope.launch { syncManager.setShowCaves(enabled) }
+    }
+
+    fun setShowSprings(enabled: Boolean) {
+        viewModelScope.launch { syncManager.setShowSprings(enabled) }
+    }
+
+    fun setShowArtificials(enabled: Boolean) {
+        viewModelScope.launch { syncManager.setShowArtificials(enabled) }
     }
 
     fun sync() {

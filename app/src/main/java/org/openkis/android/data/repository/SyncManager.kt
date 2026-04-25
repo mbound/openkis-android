@@ -27,6 +27,9 @@ class SyncManager @Inject constructor(
         private val KEY_SERVER_URL = stringPreferencesKey("server_url")
         private val KEY_LAST_SYNC = longPreferencesKey("last_sync")
         private val KEY_OFFLINE_MODE = stringPreferencesKey("offline_mode")
+        private val KEY_SHOW_CAVES = stringPreferencesKey("show_caves")
+        private val KEY_SHOW_SPRINGS = stringPreferencesKey("show_springs")
+        private val KEY_SHOW_ARTIFICIALS = stringPreferencesKey("show_artificials")
     }
 
     val serverUrl: Flow<String> = context.dataStore.data.map { prefs ->
@@ -41,6 +44,18 @@ class SyncManager @Inject constructor(
         prefs[KEY_OFFLINE_MODE] == "true"
     }
 
+    val showCaves: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHOW_CAVES] != "false"
+    }
+
+    val showSprings: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHOW_SPRINGS] != "false"
+    }
+
+    val showArtificials: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHOW_ARTIFICIALS] != "false"
+    }
+
     suspend fun setServerUrl(url: String) {
         val trimmed = url.trimEnd('/')
         context.dataStore.edit { prefs ->
@@ -52,6 +67,24 @@ class SyncManager @Inject constructor(
     suspend fun setOfflineMode(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_OFFLINE_MODE] = if (enabled) "true" else "false"
+        }
+    }
+
+    suspend fun setShowCaves(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SHOW_CAVES] = if (enabled) "true" else "false"
+        }
+    }
+
+    suspend fun setShowSprings(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SHOW_SPRINGS] = if (enabled) "true" else "false"
+        }
+    }
+
+    suspend fun setShowArtificials(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SHOW_ARTIFICIALS] = if (enabled) "true" else "false"
         }
     }
 

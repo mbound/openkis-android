@@ -8,10 +8,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import org.openkis.android.data.local.entity.ArtificialEntity
 import org.openkis.android.data.local.entity.CaveEntity
 import org.openkis.android.data.local.entity.SpringEntity
 import org.openkis.android.data.repository.CaveRepository
+import org.openkis.android.data.repository.SyncManager
 import javax.inject.Inject
 
 data class MapUiState(
@@ -24,7 +26,8 @@ data class MapUiState(
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
-    repository: CaveRepository
+    repository: CaveRepository,
+    private val syncManager: SyncManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapUiState())
@@ -39,16 +42,41 @@ class MapViewModel @Inject constructor(
     val artificials: StateFlow<List<ArtificialEntity>> = repository.getArtificialsWithCoordinates()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    init {
+        // Load persisted visibility preferences
+        viewModelScope.launch {
+            syncManager.showCaves.collect { show ->
+                _uiState.value = _uiState.value.copy(showCaves = show)
+            }
+        }
+        viewModelScope.launch {
+            syncManager.showSprings.collect { show ->
+                _uiState.value = _uiState.value.copy(showSprings = show)
+            }
+        }
+        viewModelScope.launch {
+            syncManager.showArtificials.collect { show ->
+                _uiState.value = _uiState.value.copy(showArtificials = show)
+            }
+        }
+    }
+
     fun toggleCaves() {
-        _uiState.value = _uiState.value.copy(showCaves = !_uiState.value.showCaves)
+        val newValue = !_uiState.value.showCaves
+        _uiState.value = _uiState.value.copy(showCaves = newValue)
+        viewModelScope.launch { syncManager.setShowCaves(newValue) }
     }
 
     fun toggleSprings() {
-        _uiState.value = _uiState.value.copy(showSprings = !_uiState.value.showSprings)
+        val newValue = !_uiState.value.showSprings
+        _uiState.value = _uiState.value.copy(showSprings = newValue)
+        viewModelScope.launch { syncManager.setShowSprings(newValue) }
     }
 
     fun toggleArtificials() {
-        _uiState.value = _uiState.value.copy(showArtificials = !_uiState.value.showArtificials)
+        val newValue = !_uiState.value.showArtificials
+        _uiState.value = _uiState.value.copy(showArtificials = newValue)
+        viewModelScope.launch { syncManager.setShowArtificials(newValue) }
     }
 
     fun selectMarker(type: String, code: String) {
