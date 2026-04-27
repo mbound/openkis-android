@@ -40,11 +40,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
       - name: Build release APK
-        run: ./gradlew assembleRelease
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          arguments: assembleRelease
 
       - name: Rename APK
         run: |
