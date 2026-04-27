@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.ZoomOutMap
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -110,8 +111,11 @@ fun MapScreen(
                     minZoomLevel = 3.0
                     maxZoomLevel = 21.0
 
-                    // Faster pinch-to-zoom
+                    // Smooth zoom and scaling
                     isTilesScaledToDpi = true
+                    isVerticalMapRepetitionEnabled = false
+                    setScrollableAreaLimitLatitude(85.0, -85.0, 0)
+                    setZoomRounding(false)
 
                     // Set up location overlay
                     val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), this)
@@ -265,6 +269,29 @@ fun MapScreen(
                     else
                         MaterialTheme.colorScheme.onSurface
                 )
+            }
+
+            // Reset view — zoom to fit all markers
+            SmallFloatingActionButton(
+                onClick = {
+                    val allPoints = mutableListOf<GeoPoint>()
+                    if (uiState.showCaves) caves.forEach { allPoints.add(GeoPoint(it.latitude, it.longitude)) }
+                    if (uiState.showSprings) springs.forEach { allPoints.add(GeoPoint(it.latitude, it.longitude)) }
+                    if (uiState.showArtificials) artificials.forEach { allPoints.add(GeoPoint(it.latitude, it.longitude)) }
+
+                    mapViewRef.value?.let { mapView ->
+                        if (allPoints.size >= 2) {
+                            val boundingBox = BoundingBox.fromGeoPoints(allPoints)
+                            mapView.zoomToBoundingBox(boundingBox, true, 80)
+                        } else {
+                            // Fallback: default Piedmont view
+                            mapView.controller.animateTo(GeoPoint(44.7, 7.7), 8.0, 1000L)
+                        }
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Icon(Icons.Default.ZoomOutMap, contentDescription = "Reset View")
             }
         }
 
