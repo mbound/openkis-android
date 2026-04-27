@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-04-27
+
+### Added
+- Reset view button on the map to zoom back to fit all markers
+- Zoom +/- buttons in the top-right control column
+- Amber highlight on selected map markers for visibility
+- Close (X) button on the marker callout card to dismiss selection
+- Author, credits, and license information in the About section
+
+### Changed
+- Removed adaptive icon foreground (house icon) so AGSP logo PNG is used directly without padding
+- Smoother pinch-to-zoom with fractional zoom levels
+- Moved zoom controls from bottom (hidden by callout) to top-right FAB column
+
+### Fixed
+- App icon showing default green house instead of AGSP logo
+- Launcher icon displaying with unnecessary white padding
+
 ## [0.5.0] - 2026-04-27
 
 ### Added
