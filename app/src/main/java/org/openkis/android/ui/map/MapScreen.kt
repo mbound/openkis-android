@@ -52,6 +52,7 @@ import org.openkis.android.ui.theme.SpringMarker
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.util.BoundingBox
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
@@ -67,6 +68,7 @@ fun MapScreen(
     val artificials by viewModel.artificials.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var hasZoomedToFit by remember { mutableStateOf(false) }
     var showLayerPanel by remember { mutableStateOf(false) }
     var locationEnabled by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
@@ -102,10 +104,14 @@ fun MapScreen(
                 MapView(ctx).apply {
                     setTileSource(TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
-                    controller.setZoom(6.0)
-                    controller.setCenter(GeoPoint(42.5, 12.5))
+                    controller.setZoom(8.0)
+                    // Default center on Piedmont region
+                    controller.setCenter(GeoPoint(44.7, 7.7))
                     minZoomLevel = 3.0
-                    maxZoomLevel = 19.0
+                    maxZoomLevel = 21.0
+
+                    // Faster pinch-to-zoom
+                    isTilesScaledToDpi = true
 
                     // Set up location overlay
                     val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), this)
@@ -191,6 +197,22 @@ fun MapScreen(
                             }
                         }
                         mapView.overlays.add(marker)
+                    }
+                }
+
+                // Auto-zoom to fit all markers on first data load
+                if (!hasZoomedToFit) {
+                    val allPoints = mutableListOf<GeoPoint>()
+                    if (uiState.showCaves) caves.forEach { allPoints.add(GeoPoint(it.latitude, it.longitude)) }
+                    if (uiState.showSprings) springs.forEach { allPoints.add(GeoPoint(it.latitude, it.longitude)) }
+                    if (uiState.showArtificials) artificials.forEach { allPoints.add(GeoPoint(it.latitude, it.longitude)) }
+
+                    if (allPoints.size >= 2) {
+                        val boundingBox = BoundingBox.fromGeoPoints(allPoints)
+                        mapView.post {
+                            mapView.zoomToBoundingBox(boundingBox, true, 80)
+                        }
+                        hasZoomedToFit = true
                     }
                 }
 
