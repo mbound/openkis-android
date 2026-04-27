@@ -19,12 +19,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ZoomOutMap
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
@@ -105,6 +109,7 @@ fun MapScreen(
                 MapView(ctx).apply {
                     setTileSource(TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
+                    zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
                     controller.setZoom(8.0)
                     // Default center on Piedmont region
                     controller.setCenter(GeoPoint(44.7, 7.7))
@@ -133,6 +138,8 @@ fun MapScreen(
                     mapView.overlays.add(locationOverlay)
                 }
 
+                val selectedColor = Color(0xFFFFD54F) // Amber highlight for selected markers
+
                 fun createIcon(drawableRes: Int, tintColor: Color): Drawable {
                     val drawable = ContextCompat.getDrawable(context, drawableRes)!!.mutate()
                     DrawableCompat.setTint(drawable, tintColor.toArgb())
@@ -142,7 +149,9 @@ fun MapScreen(
                 // Add cave markers
                 if (uiState.showCaves) {
                     val caveIcon = createIcon(R.drawable.ic_cave, CaveMarker)
+                    val caveIconSelected = createIcon(R.drawable.ic_cave, selectedColor)
                     for (cave in caves) {
+                        val isSelected = uiState.selectedType == "caves" && uiState.selectedCode == cave.code
                         val marker = Marker(mapView).apply {
                             position = GeoPoint(cave.latitude, cave.longitude)
                             title = "${cave.code} - ${cave.name}"
@@ -151,7 +160,7 @@ fun MapScreen(
                                 append("SV.${cave.lengthTotal} ")
                                 append("P.${cave.depthTotal}")
                             }
-                            icon = caveIcon
+                            icon = if (isSelected) caveIconSelected else caveIcon
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                             setOnMarkerClickListener { _, _ ->
                                 viewModel.selectMarker("caves", cave.code)
@@ -165,12 +174,14 @@ fun MapScreen(
                 // Add spring markers
                 if (uiState.showSprings) {
                     val springIcon = createIcon(R.drawable.ic_spring, SpringMarker)
+                    val springIconSelected = createIcon(R.drawable.ic_spring, selectedColor)
                     for (spring in springs) {
+                        val isSelected = uiState.selectedType == "springs" && uiState.selectedCode == spring.code
                         val marker = Marker(mapView).apply {
                             position = GeoPoint(spring.latitude, spring.longitude)
                             title = "${spring.code} - ${spring.name}"
                             snippet = "Q.${spring.elevation}"
-                            icon = springIcon
+                            icon = if (isSelected) springIconSelected else springIcon
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                             setOnMarkerClickListener { _, _ ->
                                 viewModel.selectMarker("springs", spring.code)
@@ -184,7 +195,9 @@ fun MapScreen(
                 // Add artificial markers
                 if (uiState.showArtificials) {
                     val artIcon = createIcon(R.drawable.ic_artificial, ArtificialMarker)
+                    val artIconSelected = createIcon(R.drawable.ic_artificial, selectedColor)
                     for (art in artificials) {
+                        val isSelected = uiState.selectedType == "artificials" && uiState.selectedCode == art.code
                         val marker = Marker(mapView).apply {
                             position = GeoPoint(art.latitude, art.longitude)
                             title = "${art.code} - ${art.name}"
@@ -193,7 +206,7 @@ fun MapScreen(
                                 append("SV.${art.lengthTotal} ")
                                 append("P.${art.depthTotal}")
                             }
-                            icon = artIcon
+                            icon = if (isSelected) artIconSelected else artIcon
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                             setOnMarkerClickListener { _, _ ->
                                 viewModel.selectMarker("artificials", art.code)
@@ -293,6 +306,22 @@ fun MapScreen(
             ) {
                 Icon(Icons.Default.ZoomOutMap, contentDescription = "Reset View")
             }
+
+            // Zoom in
+            SmallFloatingActionButton(
+                onClick = { mapViewRef.value?.controller?.zoomIn() },
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Zoom In")
+            }
+
+            // Zoom out
+            SmallFloatingActionButton(
+                onClick = { mapViewRef.value?.controller?.zoomOut() },
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Icon(Icons.Default.Remove, contentDescription = "Zoom Out")
+            }
         }
 
         // Layer toggle panel
@@ -334,16 +363,31 @@ fun MapScreen(
                     elevation = CardDefaults.cardElevation(8.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = selectedName,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = "Tap to view details",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Box {
+                        Column(modifier = Modifier.padding(16.dp).padding(end = 24.dp)) {
+                            Text(
+                                text = selectedName,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "Tap to view details",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewModel.clearSelection() },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Close",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
