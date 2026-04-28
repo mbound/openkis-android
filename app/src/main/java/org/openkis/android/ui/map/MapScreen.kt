@@ -225,7 +225,22 @@ fun MapScreen(
                     if (uiState.showArtificials) artificials.forEach { allPoints.add(GeoPoint(it.latitude, it.longitude)) }
 
                     if (allPoints.size >= 2) {
-                        val boundingBox = BoundingBox.fromGeoPoints(allPoints)
+                        // Use median-based filtering to exclude outliers
+                        val lats = allPoints.map { it.latitude }.sorted()
+                        val lons = allPoints.map { it.longitude }.sorted()
+                        val q1Idx = lats.size / 4
+                        val q3Idx = lats.size * 3 / 4
+                        val latIqr = (lats[q3Idx] - lats[q1Idx]) * 1.5
+                        val lonIqr = (lons[q3Idx] - lons[q1Idx]) * 1.5
+                        val latMin = lats[q1Idx] - latIqr
+                        val latMax = lats[q3Idx] + latIqr
+                        val lonMin = lons[q1Idx] - lonIqr
+                        val lonMax = lons[q3Idx] + lonIqr
+                        val filtered = allPoints.filter {
+                            it.latitude in latMin..latMax && it.longitude in lonMin..lonMax
+                        }
+                        val fitPoints = if (filtered.size >= 2) filtered else allPoints
+                        val boundingBox = BoundingBox.fromGeoPoints(fitPoints)
                         mapView.post {
                             mapView.zoomToBoundingBox(boundingBox, true, 80)
                         }
@@ -294,7 +309,18 @@ fun MapScreen(
 
                     mapViewRef.value?.let { mapView ->
                         if (allPoints.size >= 2) {
-                            val boundingBox = BoundingBox.fromGeoPoints(allPoints)
+                            val lats = allPoints.map { it.latitude }.sorted()
+                            val lons = allPoints.map { it.longitude }.sorted()
+                            val q1Idx = lats.size / 4
+                            val q3Idx = lats.size * 3 / 4
+                            val latIqr = (lats[q3Idx] - lats[q1Idx]) * 1.5
+                            val lonIqr = (lons[q3Idx] - lons[q1Idx]) * 1.5
+                            val filtered = allPoints.filter {
+                                it.latitude in (lats[q1Idx] - latIqr)..(lats[q3Idx] + latIqr) &&
+                                it.longitude in (lons[q1Idx] - lonIqr)..(lons[q3Idx] + lonIqr)
+                            }
+                            val fitPoints = if (filtered.size >= 2) filtered else allPoints
+                            val boundingBox = BoundingBox.fromGeoPoints(fitPoints)
                             mapView.zoomToBoundingBox(boundingBox, true, 80)
                         } else {
                             // Fallback: default Piedmont view
