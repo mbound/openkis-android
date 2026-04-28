@@ -30,6 +30,9 @@ interface SpringDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(springs: List<SpringEntity>)
 
+    @Query("DELETE FROM springs WHERE serverUrl = :serverUrl")
+    suspend fun deleteByServerUrl(serverUrl: String)
+
     @Query("DELETE FROM springs")
     suspend fun deleteAll()
 

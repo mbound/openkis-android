@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-04-28
+
+### Added
+- Multi-server support: add, remove, and manage multiple OpenKIS backend servers
+- Per-server sync with individual sync buttons
+- "Sync All" button to sync all servers at once
+- Add server dialog with URL and optional name fields
+- Delete server confirmation dialog
+- Per-server last sync timestamp display
+- Default "Piemonte" server seeded on first launch
+
+### Changed
+- Database schema: composite primary key (serverUrl + code) to support data from multiple servers
+- Sync now only replaces data from the synced server, preserving other servers' data
+- Settings UI redesigned with server list replacing single URL input
+- Database version bumped to 2 (data will be cleared on update)
+
 ## [0.6.3] - 2026-04-28
 
 ### Fixed

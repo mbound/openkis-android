@@ -1,11 +1,10 @@
 package org.openkis.android.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "springs")
+@Entity(tableName = "springs", primaryKeys = ["serverUrl", "code"])
 data class SpringEntity(
-    @PrimaryKey val code: String,
+    val code: String,
     val name: String = "",
     val caveCode: String = "",
     val latitude: Double = 0.0,

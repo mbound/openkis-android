@@ -42,6 +42,9 @@ interface CaveDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(cave: CaveEntity)
 
+    @Query("DELETE FROM caves WHERE serverUrl = :serverUrl")
+    suspend fun deleteByServerUrl(serverUrl: String)
+
     @Query("DELETE FROM caves")
     suspend fun deleteAll()
 

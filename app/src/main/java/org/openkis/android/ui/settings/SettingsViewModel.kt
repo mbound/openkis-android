@@ -9,12 +9,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.openkis.android.data.local.entity.ServerEntity
 import org.openkis.android.data.repository.SyncManager
 import org.openkis.android.data.repository.SyncResult
 import javax.inject.Inject
 
 data class SettingsUiState(
     val isSyncing: Boolean = false,
+    val syncingServerUrl: String? = null,
     val syncMessage: String? = null
 )
 
@@ -26,11 +28,8 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    val serverUrl: StateFlow<String> = syncManager.serverUrl
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
-
-    val lastSync: StateFlow<Long> = syncManager.lastSync
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0L)
+    val servers: StateFlow<List<ServerEntity>> = syncManager.servers
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val offlineMode: StateFlow<Boolean> = syncManager.offlineMode
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -44,16 +43,52 @@ class SettingsViewModel @Inject constructor(
     val showArtificials: StateFlow<Boolean> = syncManager.showArtificials
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    fun setServerUrl(url: String) {
+    fun addServer(url: String, name: String = "") {
+        viewModelScope.launch { syncManager.addServer(url, name) }
+    }
+
+    fun removeServer(url: String) {
+        viewModelScope.launch { syncManager.removeServer(url) }
+    }
+
+    fun syncServer(url: String) {
         viewModelScope.launch {
-            syncManager.setServerUrl(url)
+            _uiState.value = _uiState.value.copy(
+                isSyncing = true, syncingServerUrl = url, syncMessage = null
+            )
+            when (val result = syncManager.syncServer(url)) {
+                is SyncResult.Success -> _uiState.value = _uiState.value.copy(
+                    isSyncing = false, syncingServerUrl = null,
+                    syncMessage = "Synced ${result.count} items"
+                )
+                is SyncResult.Error -> _uiState.value = _uiState.value.copy(
+                    isSyncing = false, syncingServerUrl = null,
+                    syncMessage = "Sync failed: ${result.message}"
+                )
+            }
+        }
+    }
+
+    fun syncAll() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isSyncing = true, syncingServerUrl = null, syncMessage = null
+            )
+            when (val result = syncManager.syncAll()) {
+                is SyncResult.Success -> _uiState.value = _uiState.value.copy(
+                    isSyncing = false,
+                    syncMessage = "Sync complete: ${result.count} items"
+                )
+                is SyncResult.Error -> _uiState.value = _uiState.value.copy(
+                    isSyncing = false,
+                    syncMessage = "Sync failed: ${result.message}"
+                )
+            }
         }
     }
 
     fun setOfflineMode(enabled: Boolean) {
-        viewModelScope.launch {
-            syncManager.setOfflineMode(enabled)
-        }
+        viewModelScope.launch { syncManager.setOfflineMode(enabled) }
     }
 
     fun setShowCaves(enabled: Boolean) {
@@ -66,26 +101,6 @@ class SettingsViewModel @Inject constructor(
 
     fun setShowArtificials(enabled: Boolean) {
         viewModelScope.launch { syncManager.setShowArtificials(enabled) }
-    }
-
-    fun sync() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isSyncing = true, syncMessage = null)
-            when (val result = syncManager.syncAll()) {
-                is SyncResult.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isSyncing = false,
-                        syncMessage = "Sync complete: ${result.count} items"
-                    )
-                }
-                is SyncResult.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isSyncing = false,
-                        syncMessage = "Sync failed: ${result.message}"
-                    )
-                }
-            }
-        }
     }
 
     fun clearCache() {

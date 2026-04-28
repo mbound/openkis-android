@@ -1,11 +1,10 @@
 package org.openkis.android.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "caves")
+@Entity(tableName = "caves", primaryKeys = ["serverUrl", "code"])
 data class CaveEntity(
-    @PrimaryKey val code: String,
+    val code: String,
     val name: String = "",
     val synonyms: String = "",
     val latitude: Double = 0.0,

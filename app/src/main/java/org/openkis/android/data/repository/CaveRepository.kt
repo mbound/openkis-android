@@ -48,7 +48,7 @@ class CaveRepository @Inject constructor(
     suspend fun syncCaves(serverUrl: String): Int {
         val response = api.getCaves()
         val entities = response.items.map { it.toCaveEntity(serverUrl) }
-        caveDao.deleteAll()
+        caveDao.deleteByServerUrl(serverUrl)
         caveDao.insertAll(entities)
         return entities.size
     }
@@ -56,7 +56,7 @@ class CaveRepository @Inject constructor(
     suspend fun syncSprings(serverUrl: String): Int {
         val response = api.getSprings()
         val entities = response.items.map { it.toSpringEntity(serverUrl) }
-        springDao.deleteAll()
+        springDao.deleteByServerUrl(serverUrl)
         springDao.insertAll(entities)
         return entities.size
     }
@@ -64,9 +64,15 @@ class CaveRepository @Inject constructor(
     suspend fun syncArtificials(serverUrl: String): Int {
         val response = api.getArtificials()
         val entities = response.items.map { it.toArtificialEntity(serverUrl) }
-        artificialDao.deleteAll()
+        artificialDao.deleteByServerUrl(serverUrl)
         artificialDao.insertAll(entities)
         return entities.size
+    }
+
+    suspend fun clearByServer(serverUrl: String) {
+        caveDao.deleteByServerUrl(serverUrl)
+        springDao.deleteByServerUrl(serverUrl)
+        artificialDao.deleteByServerUrl(serverUrl)
     }
 
     suspend fun clearAll() {

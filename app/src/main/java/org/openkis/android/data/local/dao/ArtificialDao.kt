@@ -31,6 +31,9 @@ interface ArtificialDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(artificials: List<ArtificialEntity>)
 
+    @Query("DELETE FROM artificials WHERE serverUrl = :serverUrl")
+    suspend fun deleteByServerUrl(serverUrl: String)
+
     @Query("DELETE FROM artificials")
     suspend fun deleteAll()
 

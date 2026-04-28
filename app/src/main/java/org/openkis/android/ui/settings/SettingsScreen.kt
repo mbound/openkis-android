@@ -9,30 +9,35 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -46,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import org.openkis.android.data.local.entity.ServerEntity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -54,14 +60,13 @@ import java.util.Locale
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    val serverUrl by viewModel.serverUrl.collectAsState()
-    val lastSync by viewModel.lastSync.collectAsState()
+    val servers by viewModel.servers.collectAsState()
     val offlineMode by viewModel.offlineMode.collectAsState()
     val showCaves by viewModel.showCaves.collectAsState()
     val showSprings by viewModel.showSprings.collectAsState()
     val showArtificials by viewModel.showArtificials.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var urlInput by remember(serverUrl) { mutableStateOf(serverUrl) }
+    var showAddServerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.syncMessage) {
         uiState.syncMessage?.let {
@@ -90,108 +95,73 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Server configuration
+            // Servers
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Cloud,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(
-                            text = "Server Connection",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = urlInput,
-                        onValueChange = { urlInput = it },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Server URL") },
-                        placeholder = { Text("https://catastogrotte-piemonte.net/") },
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { viewModel.setServerUrl(urlInput) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = urlInput != serverUrl && urlInput.isNotBlank()
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Save URL")
-                    }
-                }
-            }
-
-            // Sync
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(4.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Sync,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(
-                            text = "Data Sync",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = if (lastSync == 0L) {
-                            "Last sync: Never"
-                        } else {
-                            val dateStr = SimpleDateFormat(
-                                "dd/MM/yyyy HH:mm",
-                                Locale.getDefault()
-                            ).format(Date(lastSync))
-                            "Last sync: $dateStr"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = { viewModel.sync() },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !uiState.isSyncing && serverUrl.isNotBlank()
-                    ) {
-                        if (uiState.isSyncing) {
-                            CircularProgressIndicator(
-                                color = MaterialTheme.colorScheme.onPrimary,
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Cloud,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(end = 8.dp)
                             )
-                            Text("Syncing...")
-                        } else {
+                            Text(
+                                text = "Servers",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                        IconButton(onClick = { showAddServerDialog = true }) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Server")
+                        }
+                    }
+
+                    if (servers.isEmpty()) {
+                        Text(
+                            text = "No servers configured",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+
+                    servers.forEach { server ->
+                        ServerRow(
+                            server = server,
+                            isSyncing = uiState.isSyncing && uiState.syncingServerUrl == server.url,
+                            isSyncDisabled = uiState.isSyncing,
+                            onSync = { viewModel.syncServer(server.url) },
+                            onDelete = { viewModel.removeServer(server.url) }
+                        )
+                    }
+
+                    if (servers.size > 1) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { viewModel.syncAll() },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !uiState.isSyncing && servers.isNotEmpty()
+                        ) {
+                            if (uiState.isSyncing && uiState.syncingServerUrl == null) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(18.dp).padding(end = 4.dp)
+                                )
+                            }
                             Icon(
                                 Icons.Default.Sync,
                                 contentDescription = null,
                                 modifier = Modifier.padding(end = 8.dp)
                             )
-                            Text("Sync Now")
+                            Text("Sync All")
                         }
-                    }
-
-                    if (serverUrl.isBlank()) {
-                        Text(
-                            text = "Configure a server URL above to enable sync",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
                     }
                 }
             }
@@ -308,7 +278,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Version 0.6.3",
+                        text = "Version 0.7.0",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -361,6 +331,139 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+
+    if (showAddServerDialog) {
+        AddServerDialog(
+            onDismiss = { showAddServerDialog = false },
+            onAdd = { url, name ->
+                viewModel.addServer(url, name)
+                showAddServerDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun ServerRow(
+    server: ServerEntity,
+    isSyncing: Boolean,
+    isSyncDisabled: Boolean,
+    onSync: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = server.name,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = server.url,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = if (server.lastSync == 0L) {
+                    "Never synced"
+                } else {
+                    val dateStr = SimpleDateFormat(
+                        "dd/MM/yyyy HH:mm",
+                        Locale.getDefault()
+                    ).format(Date(server.lastSync))
+                    "Last sync: $dateStr"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onSync, enabled = !isSyncDisabled) {
+            if (isSyncing) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            } else {
+                Icon(Icons.Default.Sync, contentDescription = "Sync")
+            }
+        }
+        IconButton(onClick = { showDeleteConfirm = true }) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Remove",
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Remove Server") },
+            text = { Text("Remove \"${server.name}\" and all its synced data?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete()
+                    showDeleteConfirm = false
+                }) {
+                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun AddServerDialog(onDismiss: () -> Unit, onAdd: (url: String, name: String) -> Unit) {
+    var url by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Server") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text("Server URL") },
+                    placeholder = { Text("https://example.com") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name (optional)") },
+                    placeholder = { Text("My Server") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onAdd(url, name) },
+                enabled = url.isNotBlank()
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

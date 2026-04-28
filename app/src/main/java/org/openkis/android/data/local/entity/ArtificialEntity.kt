@@ -1,11 +1,10 @@
 package org.openkis.android.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "artificials")
+@Entity(tableName = "artificials", primaryKeys = ["serverUrl", "code"])
 data class ArtificialEntity(
-    @PrimaryKey val code: String,
+    val code: String,
     val name: String = "",
     val synonyms: String = "",
     val latitude: Double = 0.0,

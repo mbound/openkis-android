@@ -4,13 +4,14 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.openkis.android.data.local.dao.ServerDao
+import org.openkis.android.data.local.entity.ServerEntity
 import org.openkis.android.data.remote.DynamicBaseUrlInterceptor
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,25 +22,18 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class SyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: CaveRepository,
+    private val serverDao: ServerDao,
     private val dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
 ) {
     companion object {
         const val DEFAULT_SERVER_URL = "https://catastogrotte-piemonte.net"
-        private val KEY_SERVER_URL = stringPreferencesKey("server_url")
-        private val KEY_LAST_SYNC = longPreferencesKey("last_sync")
         private val KEY_OFFLINE_MODE = stringPreferencesKey("offline_mode")
         private val KEY_SHOW_CAVES = stringPreferencesKey("show_caves")
         private val KEY_SHOW_SPRINGS = stringPreferencesKey("show_springs")
         private val KEY_SHOW_ARTIFICIALS = stringPreferencesKey("show_artificials")
     }
 
-    val serverUrl: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_SERVER_URL] ?: DEFAULT_SERVER_URL
-    }
-
-    val lastSync: Flow<Long> = context.dataStore.data.map { prefs ->
-        prefs[KEY_LAST_SYNC] ?: 0L
-    }
+    val servers: Flow<List<ServerEntity>> = serverDao.getAll()
 
     val offlineMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_OFFLINE_MODE] == "true"
@@ -57,12 +51,64 @@ class SyncManager @Inject constructor(
         prefs[KEY_SHOW_ARTIFICIALS] != "false"
     }
 
-    suspend fun setServerUrl(url: String) {
-        val trimmed = url.trimEnd('/')
-        context.dataStore.edit { prefs ->
-            prefs[KEY_SERVER_URL] = trimmed
+    suspend fun ensureDefaultServer() {
+        if (serverDao.count() == 0) {
+            addServer(DEFAULT_SERVER_URL, "Piemonte")
         }
-        dynamicBaseUrlInterceptor.baseUrl = trimmed
+    }
+
+    suspend fun addServer(url: String, name: String = "") {
+        val trimmed = url.trimEnd('/')
+        val label = name.ifBlank {
+            try { java.net.URI(trimmed).host ?: trimmed } catch (_: Exception) { trimmed }
+        }
+        serverDao.insert(ServerEntity(url = trimmed, name = label))
+    }
+
+    suspend fun removeServer(url: String) {
+        repository.clearByServer(url)
+        serverDao.deleteByUrl(url)
+    }
+
+    suspend fun syncServer(serverUrl: String): SyncResult {
+        if (serverUrl.isBlank()) return SyncResult.Error("Server URL is blank")
+
+        dynamicBaseUrlInterceptor.baseUrl = serverUrl
+
+        return try {
+            var total = 0
+            total += repository.syncCaves(serverUrl)
+            total += repository.syncSprings(serverUrl)
+            total += repository.syncArtificials(serverUrl)
+
+            serverDao.updateLastSync(serverUrl, System.currentTimeMillis())
+            SyncResult.Success(total)
+        } catch (e: Exception) {
+            SyncResult.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    suspend fun syncAll(): SyncResult {
+        val serverList = serverDao.getAll().first()
+        if (serverList.isEmpty()) return SyncResult.Error("No servers configured")
+
+        var totalCount = 0
+        val errors = mutableListOf<String>()
+
+        for (server in serverList) {
+            when (val result = syncServer(server.url)) {
+                is SyncResult.Success -> totalCount += result.count
+                is SyncResult.Error -> errors.add("${server.name}: ${result.message}")
+            }
+        }
+
+        return if (errors.isEmpty()) {
+            SyncResult.Success(totalCount)
+        } else if (totalCount > 0) {
+            SyncResult.Success(totalCount)
+        } else {
+            SyncResult.Error(errors.joinToString("; "))
+        }
     }
 
     suspend fun setOfflineMode(enabled: Boolean) {
@@ -89,31 +135,10 @@ class SyncManager @Inject constructor(
         }
     }
 
-    suspend fun syncAll(): SyncResult {
-        val url = context.dataStore.data.first()[KEY_SERVER_URL] ?: DEFAULT_SERVER_URL
-        if (url.isBlank()) return SyncResult.Error("Server URL not configured")
-
-        dynamicBaseUrlInterceptor.baseUrl = url
-
-        return try {
-            var total = 0
-            total += repository.syncCaves(url)
-            total += repository.syncSprings(url)
-            total += repository.syncArtificials(url)
-
-            context.dataStore.edit { prefs ->
-                prefs[KEY_LAST_SYNC] = System.currentTimeMillis()
-            }
-            SyncResult.Success(total)
-        } catch (e: Exception) {
-            SyncResult.Error(e.message ?: "Unknown error")
-        }
-    }
-
     suspend fun clearCache() {
         repository.clearAll()
-        context.dataStore.edit { prefs ->
-            prefs.remove(KEY_LAST_SYNC)
+        serverDao.getAll().first().forEach {
+            serverDao.updateLastSync(it.url, 0L)
         }
     }
 }
