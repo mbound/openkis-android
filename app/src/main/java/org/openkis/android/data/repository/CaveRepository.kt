@@ -7,6 +7,8 @@ import org.openkis.android.data.local.dao.SpringDao
 import org.openkis.android.data.local.entity.ArtificialEntity
 import org.openkis.android.data.local.entity.CaveEntity
 import org.openkis.android.data.local.entity.SpringEntity
+import org.openkis.android.data.remote.CsvParser
+import org.openkis.android.data.remote.DevSiteApi
 import org.openkis.android.data.remote.OpenKisApi
 import org.openkis.android.data.remote.dto.OpenKisItem
 import javax.inject.Inject
@@ -17,7 +19,8 @@ class CaveRepository @Inject constructor(
     private val caveDao: CaveDao,
     private val springDao: SpringDao,
     private val artificialDao: ArtificialDao,
-    private val api: OpenKisApi
+    private val api: OpenKisApi,
+    private val devSiteApi: DevSiteApi
 ) {
     // Caves
     fun getAllCaves(): Flow<List<CaveEntity>> = caveDao.getAll()
@@ -69,6 +72,32 @@ class CaveRepository @Inject constructor(
         return entities.size
     }
 
+    // --- Dev-site CSV sync (new format: /export/{entity}/csv) ---
+
+    suspend fun syncCavesFromDevSite(serverUrl: String): Int {
+        val rows = CsvParser.parse(devSiteApi.fetchCsv(serverUrl, "cavita-naturali"))
+        val entities = rows.mapNotNull { it.toCaveEntity(serverUrl) }
+        caveDao.deleteByServerUrl(serverUrl)
+        caveDao.insertAll(entities)
+        return entities.size
+    }
+
+    suspend fun syncSpringsFromDevSite(serverUrl: String): Int {
+        val rows = CsvParser.parse(devSiteApi.fetchCsv(serverUrl, "sorgenti"))
+        val entities = rows.mapNotNull { it.toSpringEntity(serverUrl) }
+        springDao.deleteByServerUrl(serverUrl)
+        springDao.insertAll(entities)
+        return entities.size
+    }
+
+    suspend fun syncArtificialsFromDevSite(serverUrl: String): Int {
+        val rows = CsvParser.parse(devSiteApi.fetchCsv(serverUrl, "cavita-artificiali"))
+        val entities = rows.mapNotNull { it.toArtificialEntityFromDevSite(serverUrl) }
+        artificialDao.deleteByServerUrl(serverUrl)
+        artificialDao.insertAll(entities)
+        return entities.size
+    }
+
     suspend fun clearByServer(serverUrl: String) {
         caveDao.deleteByServerUrl(serverUrl)
         springDao.deleteByServerUrl(serverUrl)
@@ -80,6 +109,79 @@ class CaveRepository @Inject constructor(
         springDao.deleteAll()
         artificialDao.deleteAll()
     }
+}
+
+// Parses a decimal-degree coordinate string; returns 0.0 if the value is outside
+// the valid range (e.g. UTM northings/eastings that cannot be displayed on the map).
+private fun String?.toWgs84OrZero(): Double {
+    val v = this?.toDoubleOrNull() ?: return 0.0
+    return if (v in -180.0..180.0) v else 0.0
+}
+
+private fun Map<String, String>.toCaveEntity(serverUrl: String): CaveEntity? {
+    val code = get("Codice")?.takeIf { it.isNotBlank() } ?: return null
+    return CaveEntity(
+        code = code,
+        name = get("Nome") ?: "",
+        synonyms = get("Sinonimi") ?: "",
+        latitude = get("Latitudine").toWgs84OrZero(),
+        longitude = get("Longitudine").toWgs84OrZero(),
+        elevation = get("Altitudine") ?: "",
+        depthPositive = get("Dislivello positivo") ?: "",
+        depthNegative = get("Dislivello negativo") ?: "",
+        depthTotal = get("Dislivello totale") ?: "",
+        lengthTotal = get("Lunghezza totale") ?: "",
+        locality = get("Località") ?: "",
+        region = get("Regione") ?: "",
+        province = get("Provincia") ?: "",
+        municipality = get("Comune") ?: "",
+        closed = get("Chiuso") ?: "",
+        serverUrl = serverUrl
+    )
+}
+
+private fun Map<String, String>.toSpringEntity(serverUrl: String): SpringEntity? {
+    val code = get("Codice")?.takeIf { it.isNotBlank() } ?: return null
+    return SpringEntity(
+        code = code,
+        name = get("Nome") ?: "",
+        latitude = get("Latitudine").toWgs84OrZero(),
+        longitude = get("Longitudine").toWgs84OrZero(),
+        elevation = get("Altitudine") ?: get("Quota") ?: "",
+        flowMax = get("Portata in piena") ?: "",
+        flowMin = get("Portata minima") ?: "",
+        flowAverage = get("Portata media") ?: "",
+        usage = get("Uso") ?: "",
+        utilization = get("Tipo") ?: "",
+        region = get("Regione") ?: "",
+        province = get("Provincia") ?: "",
+        municipality = get("Comune") ?: "",
+        serverUrl = serverUrl
+    )
+}
+
+private fun Map<String, String>.toArtificialEntityFromDevSite(serverUrl: String): ArtificialEntity? {
+    val code = get("Codice")?.takeIf { it.isNotBlank() } ?: return null
+    return ArtificialEntity(
+        code = code,
+        name = get("Nome") ?: "",
+        synonyms = get("Sinonimi") ?: "",
+        latitude = get("Latitudine").toWgs84OrZero(),
+        longitude = get("Longitudine").toWgs84OrZero(),
+        elevation = get("Quota") ?: get("Altitudine") ?: "",
+        depthTotal = get("Profondità totale") ?: "",
+        lengthTotal = get("Lunghezza totale") ?: "",
+        year = get("Anno") ?: "",
+        epoch = get("epoch") ?: "",
+        typology = get("Tipologia") ?: "",
+        category = get("Categoria") ?: "",
+        address = get("Indirizzo") ?: "",
+        locality = get("Località") ?: "",
+        region = get("Regione") ?: "",
+        province = get("Provincia") ?: "",
+        municipality = get("Comune") ?: "",
+        serverUrl = serverUrl
+    )
 }
 
 private fun OpenKisItem.toCaveEntity(serverUrl: String) = CaveEntity(

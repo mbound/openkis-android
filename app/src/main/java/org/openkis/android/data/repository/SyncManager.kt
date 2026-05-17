@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.openkis.android.data.local.dao.ServerDao
 import org.openkis.android.data.local.entity.ServerEntity
+import org.openkis.android.data.remote.DevSiteApi
 import org.openkis.android.data.remote.DynamicBaseUrlInterceptor
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,7 +24,8 @@ class SyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: CaveRepository,
     private val serverDao: ServerDao,
-    private val dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
+    private val dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
+    private val devSiteApi: DevSiteApi
 ) {
     companion object {
         const val DEFAULT_SERVER_URL = "https://catastogrotte-piemonte.net"
@@ -77,9 +79,15 @@ class SyncManager @Inject constructor(
 
         return try {
             var total = 0
-            total += repository.syncCaves(serverUrl)
-            total += repository.syncSprings(serverUrl)
-            total += repository.syncArtificials(serverUrl)
+            if (devSiteApi.isCompatible(serverUrl)) {
+                total += repository.syncCavesFromDevSite(serverUrl)
+                total += repository.syncSpringsFromDevSite(serverUrl)
+                total += repository.syncArtificialsFromDevSite(serverUrl)
+            } else {
+                total += repository.syncCaves(serverUrl)
+                total += repository.syncSprings(serverUrl)
+                total += repository.syncArtificials(serverUrl)
+            }
 
             serverDao.updateLastSync(serverUrl, System.currentTimeMillis())
             SyncResult.Success(total)
