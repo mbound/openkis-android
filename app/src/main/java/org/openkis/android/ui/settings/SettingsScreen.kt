@@ -156,7 +156,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             isSyncing = uiState.isSyncing && uiState.syncingServerUrl == server.url,
                             isSyncDisabled = uiState.isSyncing,
                             onSync = { viewModel.syncServer(server.url) },
-                            onDelete = { viewModel.removeServer(server.url) }
+                            onDelete = { viewModel.removeServer(server.url) },
+                            onVisibilityChange = { viewModel.updateServerVisible(server.url, it) },
+                            onSyncTypesChange = { caves, springs, artificials ->
+                                viewModel.updateServerSyncTypes(server.url, caves, springs, artificials)
+                            }
                         )
                     }
 
@@ -347,7 +351,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Version 1.0.1",
+                        text = "Version 1.1.0",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -445,7 +449,9 @@ private fun ServerRow(
     isSyncing: Boolean,
     isSyncDisabled: Boolean,
     onSync: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onVisibilityChange: (Boolean) -> Unit,
+    onSyncTypesChange: (caves: Boolean, springs: Boolean, artificials: Boolean) -> Unit
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -496,6 +502,57 @@ private fun ServerRow(
         }
     }
 
+    // Visibility toggle
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onVisibilityChange(!server.visible) }
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Show on map and list",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Switch(
+            checked = server.visible,
+            onCheckedChange = onVisibilityChange,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+
+    // Sync type checkboxes
+    Text(
+        text = "Sync data types:",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        SyncTypeCheckbox(
+            label = "Caves",
+            checked = server.syncCaves,
+            onCheckedChange = { onSyncTypesChange(it, server.syncSprings, server.syncArtificials) },
+            modifier = Modifier.weight(1f)
+        )
+        SyncTypeCheckbox(
+            label = "Springs",
+            checked = server.syncSprings,
+            onCheckedChange = { onSyncTypesChange(server.syncCaves, it, server.syncArtificials) },
+            modifier = Modifier.weight(1f)
+        )
+        SyncTypeCheckbox(
+            label = "Artificials",
+            checked = server.syncArtificials,
+            onCheckedChange = { onSyncTypesChange(server.syncCaves, server.syncSprings, it) },
+            modifier = Modifier.weight(1f)
+        )
+    }
+
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
@@ -514,6 +571,30 @@ private fun ServerRow(
                     Text("Cancel")
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun SyncTypeCheckbox(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clickable { onCheckedChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.size(32.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall
         )
     }
 }

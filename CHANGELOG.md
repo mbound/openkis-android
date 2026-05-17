@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-05-17
+
+### Added
+- Per-server visibility toggle: each server in Settings can be shown or hidden on the map and in the browse list independently
+- Per-server sync type selector: three checkboxes (Caves, Springs, Artificials) per server in Settings control which data types are fetched during sync; helps reduce data usage on slow connections or when only one category is needed
+- Map and browse list now filter entities by visible server: hiding a server instantly removes its data from both views without requiring a re-sync
+
+### Fixed
+- `SyncManager.syncServer()` re-downloaded the caves CSV a second time to detect server type when `syncCaves=false`; the probe now always reuses the single caves CSV fetch regardless of whether caves sync is enabled
+
 ## [1.0.1] - 2026-05-17
 
 ### Fixed

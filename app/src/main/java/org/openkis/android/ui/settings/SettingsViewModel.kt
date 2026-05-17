@@ -113,6 +113,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { syncManager.setShowArtificials(enabled) }
     }
 
+    fun updateServerVisible(url: String, visible: Boolean) {
+        viewModelScope.launch { syncManager.updateServerVisible(url, visible) }
+    }
+
+    fun updateServerSyncTypes(url: String, caves: Boolean, springs: Boolean, artificials: Boolean) {
+        viewModelScope.launch { syncManager.updateServerSyncTypes(url, caves, springs, artificials) }
+    }
+
     fun clearCache() {
         viewModelScope.launch {
             syncManager.clearCache()

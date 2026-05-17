@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.openkis.android.data.local.entity.ArtificialEntity
@@ -34,14 +35,26 @@ class MapViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
-    val caves: StateFlow<List<CaveEntity>> = repository.getCavesWithCoordinates()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val caves: StateFlow<List<CaveEntity>> = combine(
+        repository.getCavesWithCoordinates(),
+        syncManager.visibleServerUrls
+    ) { entities, visibleUrls ->
+        entities.filter { it.serverUrl in visibleUrls }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val springs: StateFlow<List<SpringEntity>> = repository.getSpringsWithCoordinates()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val springs: StateFlow<List<SpringEntity>> = combine(
+        repository.getSpringsWithCoordinates(),
+        syncManager.visibleServerUrls
+    ) { entities, visibleUrls ->
+        entities.filter { it.serverUrl in visibleUrls }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val artificials: StateFlow<List<ArtificialEntity>> = repository.getArtificialsWithCoordinates()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val artificials: StateFlow<List<ArtificialEntity>> = combine(
+        repository.getArtificialsWithCoordinates(),
+        syncManager.visibleServerUrls
+    ) { entities, visibleUrls ->
+        entities.filter { it.serverUrl in visibleUrls }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     init {
         // Load persisted visibility preferences

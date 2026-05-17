@@ -25,6 +25,12 @@ interface ServerDao {
     @Query("UPDATE servers SET lastSync = :timestamp WHERE url = :url")
     suspend fun updateLastSync(url: String, timestamp: Long)
 
+    @Query("UPDATE servers SET visible = :visible WHERE url = :url")
+    suspend fun updateVisible(url: String, visible: Boolean)
+
+    @Query("UPDATE servers SET syncCaves = :caves, syncSprings = :springs, syncArtificials = :artificials WHERE url = :url")
+    suspend fun updateSyncTypes(url: String, caves: Boolean, springs: Boolean, artificials: Boolean)
+
     @Query("SELECT COUNT(*) FROM servers")
     suspend fun count(): Int
 }

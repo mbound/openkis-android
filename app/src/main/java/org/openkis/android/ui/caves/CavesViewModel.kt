@@ -35,6 +35,13 @@ data class CaveListItem(
     val longitude: Double = 0.0
 )
 
+private data class CavesFilterState(
+    val query: String,
+    val type: ItemType,
+    val enabled: Set<ItemType>,
+    val visibleUrls: Set<String>
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CavesViewModel @Inject constructor(
@@ -61,10 +68,10 @@ class CavesViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ItemType.entries.toSet())
 
     val items: StateFlow<List<CaveListItem>> = combine(
-        _searchQuery, _selectedType, enabledTypes
-    ) { query, type, enabled ->
-        Triple(query, type, enabled)
-    }.flatMapLatest { (query, type, enabled) ->
+        _searchQuery, _selectedType, enabledTypes, syncManager.visibleServerUrls
+    ) { query, type, enabled, visibleUrls ->
+        CavesFilterState(query, type, enabled, visibleUrls)
+    }.flatMapLatest { (query, type, enabled, visibleUrls) ->
         if (type !in enabled) {
             kotlinx.coroutines.flow.flowOf(emptyList())
         } else {
@@ -72,19 +79,25 @@ class CavesViewModel @Inject constructor(
                 ItemType.CAVES -> {
                     val flow = if (query.isBlank()) repository.getAllCaves() else repository.searchCaves(query)
                     flow.flatMapLatest { caves ->
-                        kotlinx.coroutines.flow.flowOf(caves.map { it.toListItem() })
+                        kotlinx.coroutines.flow.flowOf(
+                            caves.filter { it.serverUrl in visibleUrls }.map { it.toListItem() }
+                        )
                     }
                 }
                 ItemType.SPRINGS -> {
                     val flow = if (query.isBlank()) repository.getAllSprings() else repository.searchSprings(query)
                     flow.flatMapLatest { springs ->
-                        kotlinx.coroutines.flow.flowOf(springs.map { it.toListItem() })
+                        kotlinx.coroutines.flow.flowOf(
+                            springs.filter { it.serverUrl in visibleUrls }.map { it.toListItem() }
+                        )
                     }
                 }
                 ItemType.ARTIFICIALS -> {
                     val flow = if (query.isBlank()) repository.getAllArtificials() else repository.searchArtificials(query)
                     flow.flatMapLatest { arts ->
-                        kotlinx.coroutines.flow.flowOf(arts.map { it.toListItem() })
+                        kotlinx.coroutines.flow.flowOf(
+                            arts.filter { it.serverUrl in visibleUrls }.map { it.toListItem() }
+                        )
                     }
                 }
             }

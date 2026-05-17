@@ -18,7 +18,7 @@ import org.openkis.android.data.local.entity.SpringEntity
         ArtificialEntity::class,
         ServerEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

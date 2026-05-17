@@ -39,6 +39,10 @@ class SyncManager @Inject constructor(
 
     val servers: Flow<List<ServerEntity>> = serverDao.getAll()
 
+    val visibleServerUrls: Flow<Set<String>> = serverDao.getAll().map { servers ->
+        servers.filter { it.visible }.map { it.url }.toSet()
+    }
+
     val offlineMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_OFFLINE_MODE] == "true"
     }
@@ -80,19 +84,29 @@ class SyncManager @Inject constructor(
         dynamicBaseUrlInterceptor.baseUrl = serverUrl
         debugLogger.i("SyncManager", "Starting sync: $serverUrl")
 
+        val server = serverDao.getByUrl(serverUrl)
+        val syncCaves = server?.syncCaves != false
+        val syncSprings = server?.syncSprings != false
+        val syncArtificials = server?.syncArtificials != false
+        debugLogger.i("SyncManager", "Sync types — caves=$syncCaves springs=$syncSprings artificials=$syncArtificials")
+
         return try {
             var total = 0
-            val cavesCsv = devSiteApi.fetchCsvOrNull(serverUrl, "cavita-naturali")
-            if (cavesCsv != null) {
-                debugLogger.i("SyncManager", "Routing: dev-site CSV")
-                total += repository.syncCavesFromDevSiteContent(serverUrl, cavesCsv)
-                total += repository.syncSpringsFromDevSite(serverUrl)
-                total += repository.syncArtificialsFromDevSite(serverUrl)
+            // Always probe with the caves CSV to detect server type.
+            // If syncCaves=true, the content is used directly (no second download).
+            // If syncCaves=false, we probe but discard the content.
+            val probeResult = devSiteApi.fetchCsvOrNull(serverUrl, "cavita-naturali")
+            val isDevSite = probeResult != null
+            debugLogger.i("SyncManager", "Routing: ${if (isDevSite) "dev-site CSV" else "legacy JSON"}")
+
+            if (isDevSite) {
+                if (syncCaves) total += repository.syncCavesFromDevSiteContent(serverUrl, probeResult!!)
+                if (syncSprings) total += repository.syncSpringsFromDevSite(serverUrl)
+                if (syncArtificials) total += repository.syncArtificialsFromDevSite(serverUrl)
             } else {
-                debugLogger.i("SyncManager", "Routing: legacy JSON (dev-site CSV not available)")
-                total += repository.syncCaves(serverUrl)
-                total += repository.syncSprings(serverUrl)
-                total += repository.syncArtificials(serverUrl)
+                if (syncCaves) total += repository.syncCaves(serverUrl)
+                if (syncSprings) total += repository.syncSprings(serverUrl)
+                if (syncArtificials) total += repository.syncArtificials(serverUrl)
             }
 
             debugLogger.i("SyncManager", "Sync complete: $total items from $serverUrl")
@@ -149,6 +163,14 @@ class SyncManager @Inject constructor(
         context.dataStore.edit { prefs ->
             prefs[KEY_SHOW_ARTIFICIALS] = if (enabled) "true" else "false"
         }
+    }
+
+    suspend fun updateServerVisible(url: String, visible: Boolean) {
+        serverDao.updateVisible(url, visible)
+    }
+
+    suspend fun updateServerSyncTypes(url: String, caves: Boolean, springs: Boolean, artificials: Boolean) {
+        serverDao.updateSyncTypes(url, caves, springs, artificials)
     }
 
     suspend fun clearCache() {
