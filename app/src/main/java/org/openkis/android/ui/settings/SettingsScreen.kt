@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -57,6 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import org.openkis.android.data.local.entity.ServerEntity
+import org.openkis.android.data.repository.SyncManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,6 +72,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val showCaves by viewModel.showCaves.collectAsState()
     val showSprings by viewModel.showSprings.collectAsState()
     val showArtificials by viewModel.showArtificials.collectAsState()
+    val devSourcesEnabled by viewModel.devSourcesEnabled.collectAsState()
     val debugEntries by viewModel.debugLogEntries.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddServerDialog by remember { mutableStateOf(false) }
@@ -150,7 +153,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         )
                     }
 
-                    servers.forEach { server ->
+                    val displayedServers = if (devSourcesEnabled) servers
+                        else servers.filter { it.url != SyncManager.DEV_SERVER_URL }
+                    displayedServers.forEach { server ->
                         ServerRow(
                             server = server,
                             isSyncing = uiState.isSyncing && uiState.syncingServerUrl == server.url,
@@ -164,12 +169,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         )
                     }
 
-                    if (servers.size > 1) {
+                    if (displayedServers.size > 1) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { viewModel.syncAll() },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !uiState.isSyncing && servers.isNotEmpty()
+                            enabled = !uiState.isSyncing && displayedServers.isNotEmpty()
                         ) {
                             if (uiState.isSyncing && uiState.syncingServerUrl == null) {
                                 CircularProgressIndicator(
@@ -263,6 +268,49 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
             HorizontalDivider()
 
+            // Dev Data Sources
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.setDevSourcesEnabled(!devSourcesEnabled) }
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            Icons.Default.Science,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp, top = 2.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Dev Data Sources",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "Include the experimental dev server (dev.catastogrotte-piemonte.net). Data may be incomplete or unstable.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Checkbox(
+                        checked = devSourcesEnabled,
+                        onCheckedChange = { viewModel.setDevSourcesEnabled(it) },
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
+
             // Debug log
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -351,7 +399,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Version 1.1.0",
+                        text = "Version 1.1.1",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-05-17
+
+### Added
+- Dev Data Sources toggle in Settings (just above the Debug Log card): when enabled, the `dev.catastogrotte-piemonte.net` experimental server is added to the server list and included in sync; when disabled the server is hidden from both the map/list and the Settings servers section and excluded from Sync All
+- Dev server is seeded in the local DB on first launch with `visible=false`, so enabling it later never requires a manual add
+
+### Changed
+- `syncAll()` now skips servers with `visible=false`; individual per-server sync is unaffected
+
 ## [1.1.0] - 2026-05-17
 
 ### Added

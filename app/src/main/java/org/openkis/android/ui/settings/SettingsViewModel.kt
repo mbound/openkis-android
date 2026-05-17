@@ -46,8 +46,15 @@ class SettingsViewModel @Inject constructor(
     val showArtificials: StateFlow<Boolean> = syncManager.showArtificials
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    val devSourcesEnabled: StateFlow<Boolean> = syncManager.devSourcesEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     val debugLogEntries: StateFlow<List<LogEntry>> = debugLogger.entries
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun setDevSourcesEnabled(enabled: Boolean) {
+        viewModelScope.launch { syncManager.setDevSourcesEnabled(enabled) }
+    }
 
     fun getDebugLogContent(): String = debugLogger.getContent()
 

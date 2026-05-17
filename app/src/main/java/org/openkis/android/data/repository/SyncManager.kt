@@ -31,10 +31,12 @@ class SyncManager @Inject constructor(
 ) {
     companion object {
         const val DEFAULT_SERVER_URL = "https://catastogrotte-piemonte.net"
+        const val DEV_SERVER_URL = "https://dev.catastogrotte-piemonte.net"
         private val KEY_OFFLINE_MODE = stringPreferencesKey("offline_mode")
         private val KEY_SHOW_CAVES = stringPreferencesKey("show_caves")
         private val KEY_SHOW_SPRINGS = stringPreferencesKey("show_springs")
         private val KEY_SHOW_ARTIFICIALS = stringPreferencesKey("show_artificials")
+        private val KEY_DEV_SOURCES = stringPreferencesKey("dev_sources_enabled")
     }
 
     val servers: Flow<List<ServerEntity>> = serverDao.getAll()
@@ -59,9 +61,17 @@ class SyncManager @Inject constructor(
         prefs[KEY_SHOW_ARTIFICIALS] != "false"
     }
 
+    val devSourcesEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DEV_SOURCES] == "true"
+    }
+
     suspend fun ensureDefaultServer() {
         if (serverDao.count() == 0) {
             addServer(DEFAULT_SERVER_URL, "Piemonte")
+        }
+        // Seed the dev server hidden by default; only inserted once
+        if (serverDao.getByUrl(DEV_SERVER_URL) == null) {
+            serverDao.insert(ServerEntity(url = DEV_SERVER_URL, name = "Dev — Piemonte", visible = false))
         }
     }
 
@@ -125,7 +135,7 @@ class SyncManager @Inject constructor(
         var totalCount = 0
         val errors = mutableListOf<String>()
 
-        for (server in serverList) {
+        for (server in serverList.filter { it.visible }) {
             when (val result = syncServer(server.url)) {
                 is SyncResult.Success -> totalCount += result.count
                 is SyncResult.Error -> errors.add("${server.name}: ${result.message}")
@@ -162,6 +172,21 @@ class SyncManager @Inject constructor(
     suspend fun setShowArtificials(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SHOW_ARTIFICIALS] = if (enabled) "true" else "false"
+        }
+    }
+
+    suspend fun setDevSourcesEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_DEV_SOURCES] = if (enabled) "true" else "false"
+        }
+        if (enabled) {
+            if (serverDao.getByUrl(DEV_SERVER_URL) == null) {
+                serverDao.insert(ServerEntity(url = DEV_SERVER_URL, name = "Dev — Piemonte", visible = true))
+            } else {
+                serverDao.updateVisible(DEV_SERVER_URL, true)
+            }
+        } else {
+            serverDao.updateVisible(DEV_SERVER_URL, false)
         }
     }
 
