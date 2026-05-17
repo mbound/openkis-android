@@ -13,7 +13,7 @@ package org.openkis.android.data.remote
 object CsvParser {
 
     fun parse(raw: String): List<Map<String, String>> {
-        val content = raw.trimStart('﻿')
+        val content = raw.removePrefix("﻿")
         val rows = parseRows(content)
 
         // The first row whose first cell is not a plain integer is the header row.

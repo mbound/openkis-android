@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.openkis.android.data.debug.DebugLogger
+import org.openkis.android.data.debug.LogEntry
 import org.openkis.android.data.local.entity.ServerEntity
 import org.openkis.android.data.repository.SyncManager
 import org.openkis.android.data.repository.SyncResult
@@ -22,7 +24,8 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val debugLogger: DebugLogger
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -42,6 +45,13 @@ class SettingsViewModel @Inject constructor(
 
     val showArtificials: StateFlow<Boolean> = syncManager.showArtificials
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val debugLogEntries: StateFlow<List<LogEntry>> = debugLogger.entries
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun getDebugLogContent(): String = debugLogger.getContent()
+
+    fun clearDebugLog() = debugLogger.clear()
 
     fun addServer(url: String, name: String = "") {
         viewModelScope.launch { syncManager.addServer(url, name) }

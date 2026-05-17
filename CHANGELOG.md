@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-05-17
+
+### Fixed
+- `DevSiteApi.isCompatible()` used a HEAD request; servers that return HTTP 405 for HEAD were incorrectly treated as incompatible, causing sync to fall back to the legacy `openkis_json.php` path and always report "Never Synced"
+- `CsvParser` BOM stripping used an embedded BOM character literal; replaced with an explicit `﻿` prefix string to guarantee correct stripping regardless of source-file encoding
+
+### Added
+- Internal debug log (`DebugLogger`): in-memory ring buffer (500 entries) with level, tag, timestamp, and message
+- Debug Log card in Settings: view log in a scrollable dialog, export to a text file via the system file picker, or clear the log
+- Sync path now logged end-to-end: probe URL and result, routing decision (dev-site CSV vs legacy JSON), per-entity CSV fetch size, total synced count, and errors
+
 ## [0.8.0] - 2026-05-17
 
 ### Added

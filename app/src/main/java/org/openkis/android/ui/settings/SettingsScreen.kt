@@ -1,5 +1,8 @@
 package org.openkis.android.ui.settings
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Sync
@@ -49,6 +53,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import org.openkis.android.data.local.entity.ServerEntity
@@ -65,8 +70,21 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val showCaves by viewModel.showCaves.collectAsState()
     val showSprings by viewModel.showSprings.collectAsState()
     val showArtificials by viewModel.showArtificials.collectAsState()
+    val debugEntries by viewModel.debugLogEntries.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddServerDialog by remember { mutableStateOf(false) }
+    var showLogDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val exportLogLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.openOutputStream(it)?.use { stream ->
+                stream.write(viewModel.getDebugLogContent().toByteArray(Charsets.UTF_8))
+            }
+        }
+    }
 
     LaunchedEffect(uiState.syncMessage) {
         uiState.syncMessage?.let {
@@ -241,6 +259,57 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
             HorizontalDivider()
 
+            // Debug log
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.BugReport,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = "Debug Log",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${debugEntries.size} entries",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { showLogDialog = true },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("View")
+                        }
+                        OutlinedButton(
+                            onClick = { exportLogLauncher.launch("openkis-debug.txt") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Export")
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.clearDebugLog() },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Clear")
+                        }
+                    }
+                }
+            }
+
             // Clear cache
             OutlinedButton(
                 onClick = { viewModel.clearCache() },
@@ -278,7 +347,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Version 0.7.0",
+                        text = "Version 0.9.0",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -330,6 +399,33 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    if (showLogDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            title = { Text("Debug Log") },
+            text = {
+                val scrollState = rememberScrollState()
+                val logText = if (debugEntries.isEmpty()) {
+                    "No log entries yet."
+                } else {
+                    val fmt = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
+                    debugEntries.joinToString("\n") { entry ->
+                        "${fmt.format(Date(entry.timestamp))} ${entry.level}/${entry.tag}: ${entry.message}"
+                    }
+                }
+                Text(
+                    text = logText,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    modifier = Modifier.verticalScroll(scrollState)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showLogDialog = false }) { Text("Close") }
+            }
+        )
     }
 
     if (showAddServerDialog) {

@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.openkis.android.data.debug.DebugLogger
 import org.openkis.android.data.local.dao.ServerDao
 import org.openkis.android.data.local.entity.ServerEntity
 import org.openkis.android.data.remote.DevSiteApi
@@ -25,7 +26,8 @@ class SyncManager @Inject constructor(
     private val repository: CaveRepository,
     private val serverDao: ServerDao,
     private val dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
-    private val devSiteApi: DevSiteApi
+    private val devSiteApi: DevSiteApi,
+    private val debugLogger: DebugLogger
 ) {
     companion object {
         const val DEFAULT_SERVER_URL = "https://catastogrotte-piemonte.net"
@@ -76,10 +78,14 @@ class SyncManager @Inject constructor(
         if (serverUrl.isBlank()) return SyncResult.Error("Server URL is blank")
 
         dynamicBaseUrlInterceptor.baseUrl = serverUrl
+        debugLogger.i("SyncManager", "Starting sync: $serverUrl")
 
         return try {
+            val isDevSite = devSiteApi.isCompatible(serverUrl)
+            debugLogger.i("SyncManager", "Routing: ${if (isDevSite) "dev-site CSV" else "legacy JSON"}")
+
             var total = 0
-            if (devSiteApi.isCompatible(serverUrl)) {
+            if (isDevSite) {
                 total += repository.syncCavesFromDevSite(serverUrl)
                 total += repository.syncSpringsFromDevSite(serverUrl)
                 total += repository.syncArtificialsFromDevSite(serverUrl)
@@ -89,9 +95,11 @@ class SyncManager @Inject constructor(
                 total += repository.syncArtificials(serverUrl)
             }
 
+            debugLogger.i("SyncManager", "Sync complete: $total items from $serverUrl")
             serverDao.updateLastSync(serverUrl, System.currentTimeMillis())
             SyncResult.Success(total)
         } catch (e: Exception) {
+            debugLogger.e("SyncManager", "Sync error for $serverUrl: ${e.message}")
             SyncResult.Error(e.message ?: "Unknown error")
         }
     }
