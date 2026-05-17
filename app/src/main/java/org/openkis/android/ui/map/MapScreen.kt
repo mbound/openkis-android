@@ -49,6 +49,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import org.openkis.android.ui.theme.ArtificialMarker
+import org.openkis.android.ui.theme.CaveMarker
+import org.openkis.android.ui.theme.SpringMarker
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
