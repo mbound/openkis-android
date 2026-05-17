@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.openkis.android.data.debug.DebugLogger
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,9 +18,15 @@ import javax.inject.Singleton
  */
 @Singleton
 class DevSiteApi @Inject constructor(
-    private val client: OkHttpClient,
+    client: OkHttpClient,
     private val logger: DebugLogger
 ) {
+    // Dev-site CSV exports can be slow to generate; use a 5-minute read timeout.
+    // newBuilder() preserves all interceptors from the shared client.
+    private val client = client.newBuilder()
+        .readTimeout(5, TimeUnit.MINUTES)
+        .build()
+
 
     /**
      * Fetches the CSV export for [entityPath] from [serverUrl], returning null on any error.
