@@ -1,6 +1,7 @@
 package org.openkis.android.ui.map
 
 import android.Manifest
+import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -47,13 +48,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.DrawableCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import org.openkis.android.R
-import org.openkis.android.ui.theme.ArtificialMarker
-import org.openkis.android.ui.theme.CaveMarker
-import org.openkis.android.ui.theme.SpringMarker
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -138,18 +133,17 @@ fun MapScreen(
                     mapView.overlays.add(locationOverlay)
                 }
 
-                val selectedColor = Color(0xFFFFD54F) // Amber highlight for selected markers
+                val selectedArgb = Color(0xFFFFD54F).toArgb()
+                val compositor = viewModel.compositor
 
-                fun createIcon(drawableRes: Int, tintColor: Color): Drawable {
-                    val drawable = ContextCompat.getDrawable(context, drawableRes)!!.mutate()
-                    DrawableCompat.setTint(drawable, tintColor.toArgb())
-                    return drawable
+                fun markerIcon(category: String, layers: List<String>, selected: Boolean): Drawable {
+                    val d = compositor.compose(category, layers)
+                    if (selected) d.setColorFilter(selectedArgb, PorterDuff.Mode.SRC_ATOP)
+                    return d
                 }
 
                 // Add cave markers
                 if (uiState.showCaves) {
-                    val caveIcon = createIcon(R.drawable.ic_cave, CaveMarker)
-                    val caveIconSelected = createIcon(R.drawable.ic_cave, selectedColor)
                     for (cave in caves) {
                         val isSelected = uiState.selectedType == "caves" && uiState.selectedCode == cave.code
                         val marker = Marker(mapView).apply {
@@ -160,8 +154,8 @@ fun MapScreen(
                                 append("SV.${cave.lengthTotal} ")
                                 append("P.${cave.depthTotal}")
                             }
-                            icon = if (isSelected) caveIconSelected else caveIcon
-                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            icon = markerIcon("caves", MarkerIconResolver.caveIconLayers(cave), isSelected)
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             setOnMarkerClickListener { _, _ ->
                                 viewModel.selectMarker("caves", cave.code)
                                 true
@@ -173,16 +167,14 @@ fun MapScreen(
 
                 // Add spring markers
                 if (uiState.showSprings) {
-                    val springIcon = createIcon(R.drawable.ic_spring, SpringMarker)
-                    val springIconSelected = createIcon(R.drawable.ic_spring, selectedColor)
                     for (spring in springs) {
                         val isSelected = uiState.selectedType == "springs" && uiState.selectedCode == spring.code
                         val marker = Marker(mapView).apply {
                             position = GeoPoint(spring.latitude, spring.longitude)
                             title = "${spring.code} - ${spring.name}"
                             snippet = "Q.${spring.elevation}"
-                            icon = if (isSelected) springIconSelected else springIcon
-                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            icon = markerIcon("springs", MarkerIconResolver.springIconLayers(spring), isSelected)
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             setOnMarkerClickListener { _, _ ->
                                 viewModel.selectMarker("springs", spring.code)
                                 true
@@ -194,8 +186,6 @@ fun MapScreen(
 
                 // Add artificial markers
                 if (uiState.showArtificials) {
-                    val artIcon = createIcon(R.drawable.ic_artificial, ArtificialMarker)
-                    val artIconSelected = createIcon(R.drawable.ic_artificial, selectedColor)
                     for (art in artificials) {
                         val isSelected = uiState.selectedType == "artificials" && uiState.selectedCode == art.code
                         val marker = Marker(mapView).apply {
@@ -206,8 +196,8 @@ fun MapScreen(
                                 append("SV.${art.lengthTotal} ")
                                 append("P.${art.depthTotal}")
                             }
-                            icon = if (isSelected) artIconSelected else artIcon
-                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            icon = markerIcon("artificials", MarkerIconResolver.artificialIconLayers(art), isSelected)
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             setOnMarkerClickListener { _, _ ->
                                 viewModel.selectMarker("artificials", art.code)
                                 true

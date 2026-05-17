@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-05-17
+
+### Added
+- OpenKIS PNG icon set for all three data types, bundled as app assets (`assets/icons/{caves,springs,artificials}/`)
+- `IconCompositor`: composites multiple transparent 128×128 px PNG layers into a single `BitmapDrawable` at runtime, with a 64-entry `LruCache` to avoid re-decoding on each map refresh
+- `MarkerIconResolver`: maps entity metadata to the ordered layer list, mirroring the PHP backend's `openkis_GetIcon()` logic — cave icons encode vertical trend (asc/desc/hori), hydrology type (water/emitting/absorbent), meteorology (blow/suck during heat/cold), and closure status
+- Design document at `doc/design-docs/map-icons.md`
+
+### Changed
+- Map marker anchor changed from center-bottom (pin style) to center-center (symbol style) to match the OpenKIS square icon convention
+
 ## [0.9.1] - 2026-05-17
 
 ### Fixed

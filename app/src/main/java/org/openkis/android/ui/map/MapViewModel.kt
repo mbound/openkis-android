@@ -27,7 +27,8 @@ data class MapUiState(
 @HiltViewModel
 class MapViewModel @Inject constructor(
     repository: CaveRepository,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    val compositor: IconCompositor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapUiState())
