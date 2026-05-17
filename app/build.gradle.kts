@@ -21,14 +21,24 @@ android {
 
     signingConfigs {
         getByName("debug") {
-            // Uses default debug keystore
+            // Uses default debug keystore for local development builds
+        }
+        create("release") {
+            storeFile = System.getenv("RELEASE_STORE_FILE")?.let { file(it) }
+            storePassword = System.getenv("RELEASE_STORE_PASSWORD")
+            keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+            keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            // Use the persistent release keystore on CI; fall back to debug locally
+            signingConfig = if (System.getenv("RELEASE_STORE_FILE") != null)
+                signingConfigs.getByName("release")
+            else
+                signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
