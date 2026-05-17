@@ -43,41 +43,6 @@ OpenKIS Android connects to your OpenKIS server, syncs cave data for offline use
 
 4. In the app, go to **Settings**, enter your OpenKIS server URL (e.g. `https://your-server.com/`), and tap **Sync Now**.
 
-## Architecture
-
-The app follows a clean architecture pattern with unidirectional data flow:
-
-```
-ui/                          # Presentation (Jetpack Compose + ViewModels)
-├── map/                     # Map screen with osmdroid
-├── caves/                   # List + detail screens
-├── export/                  # KML/GPX/JSON export
-├── settings/                # Server config, sync, offline mode
-├── navigation/              # Bottom nav + nav graph
-└── theme/                   # Material 3 theming
-
-data/                        # Data layer
-├── local/                   # Room database (entities + DAOs)
-├── remote/                  # Retrofit API client
-├── repository/              # Repository + SyncManager
-└── export/                  # File exporters
-
-di/                          # Hilt dependency injection
-```
-
-### Tech Stack
-
-| Component | Library |
-|---|---|
-| UI | Jetpack Compose + Material 3 |
-| Maps | osmdroid (OpenStreetMap) |
-| Local DB | Room |
-| Networking | Retrofit + Kotlin Serialization |
-| DI | Hilt |
-| Preferences | DataStore |
-| Navigation | Navigation Compose |
-| Language | Kotlin 2.1 |
-
 ## Data Model
 
 The app syncs three main entity types from the OpenKIS server:
