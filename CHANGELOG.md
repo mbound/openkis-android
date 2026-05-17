@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-05-17
+
+### Added
+- Support for the new `dev.catastogrotte-piemonte.net` export API format
+- `CsvParser`: RFC4180 CSV parser for the site's export format (BOM-aware, skips numeric-index header row, header-keyed column lookup)
+- `DevSiteApi`: auto-detects compatible servers via a HEAD probe to `/export/cavita-naturali/csv`; falls back to legacy `openkis_json.php` for older servers
+- CSV sync for natural caves (`/export/cavita-naturali/csv`), springs (`/export/sorgenti/csv`), and artificial cavities (`/export/cavita-artificiali/csv`)
+
+### Notes
+- Springs with UTM coordinates (outside WGS84 decimal-degree range) are stored in the database but displayed at 0,0 on the map; UTM conversion is planned for a future release
+
 ## [0.7.0] - 2026-04-28
 
 ### Added
