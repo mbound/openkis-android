@@ -82,6 +82,14 @@ class CaveRepository @Inject constructor(
         return entities.size
     }
 
+    suspend fun syncCavesFromDevSiteContent(serverUrl: String, csvContent: String): Int {
+        val rows = CsvParser.parse(csvContent)
+        val entities = rows.mapNotNull { it.toCaveEntity(serverUrl) }
+        caveDao.deleteByServerUrl(serverUrl)
+        caveDao.insertAll(entities)
+        return entities.size
+    }
+
     suspend fun syncSpringsFromDevSite(serverUrl: String): Int {
         val rows = CsvParser.parse(devSiteApi.fetchCsv(serverUrl, "sorgenti"))
         val entities = rows.mapNotNull { it.toSpringEntity(serverUrl) }

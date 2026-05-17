@@ -81,15 +81,15 @@ class SyncManager @Inject constructor(
         debugLogger.i("SyncManager", "Starting sync: $serverUrl")
 
         return try {
-            val isDevSite = devSiteApi.isCompatible(serverUrl)
-            debugLogger.i("SyncManager", "Routing: ${if (isDevSite) "dev-site CSV" else "legacy JSON"}")
-
             var total = 0
-            if (isDevSite) {
-                total += repository.syncCavesFromDevSite(serverUrl)
+            val cavesCsv = devSiteApi.fetchCsvOrNull(serverUrl, "cavita-naturali")
+            if (cavesCsv != null) {
+                debugLogger.i("SyncManager", "Routing: dev-site CSV")
+                total += repository.syncCavesFromDevSiteContent(serverUrl, cavesCsv)
                 total += repository.syncSpringsFromDevSite(serverUrl)
                 total += repository.syncArtificialsFromDevSite(serverUrl)
             } else {
+                debugLogger.i("SyncManager", "Routing: legacy JSON (dev-site CSV not available)")
                 total += repository.syncCaves(serverUrl)
                 total += repository.syncSprings(serverUrl)
                 total += repository.syncArtificials(serverUrl)

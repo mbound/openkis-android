@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-05-17
+
+### Fixed
+- Dev-site sync made two full CSV downloads per entity: one for the compatibility probe and one for the actual data. The probe is now eliminated — the caves CSV fetch doubles as the compatibility check, and its content is passed directly to the parser. Springs and artificials are each fetched exactly once. Total downloads per sync reduced from 7 to 3 for dev-site servers.
+
 ## [0.9.0] - 2026-05-17
 
 ### Fixed

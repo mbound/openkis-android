@@ -22,29 +22,39 @@ class DevSiteApi @Inject constructor(
 ) {
 
     /**
-     * Returns true if the server exposes the /export/ CSV endpoints.
-     * Uses a GET request (not HEAD) because some servers return 405 for HEAD.
+     * Fetches the CSV export for [entityPath] from [serverUrl], returning null on any error.
+     * Used for the first entity fetch, which doubles as a compatibility probe:
+     * a non-null result means the server supports this API format.
      */
-    suspend fun isCompatible(serverUrl: String): Boolean {
-        val probeUrl = "${serverUrl.trimEnd('/')}/export/cavita-naturali/csv"
-        logger.d("DevSiteApi", "Probing: $probeUrl")
+    suspend fun fetchCsvOrNull(serverUrl: String, entityPath: String): String? {
+        val url = "${serverUrl.trimEnd('/')}/export/$entityPath/csv"
+        logger.d("DevSiteApi", "Fetching CSV: $url")
         return try {
             withContext(Dispatchers.IO) {
-                val request = Request.Builder().url(probeUrl).get().build()
+                val request = Request.Builder().url(url).build()
                 client.newCall(request).execute().use { response ->
-                    val ok = response.isSuccessful
-                    logger.i("DevSiteApi", "Probe result: HTTP ${response.code} → compatible=$ok")
-                    ok
+                    if (!response.isSuccessful) {
+                        logger.w("DevSiteApi", "CSV not available: HTTP ${response.code} for $entityPath")
+                        return@withContext null
+                    }
+                    val body = response.body?.string()
+                    if (body == null) {
+                        logger.w("DevSiteApi", "Empty response for $entityPath")
+                        return@withContext null
+                    }
+                    logger.i("DevSiteApi", "CSV fetched: ${body.length} chars for $entityPath")
+                    body
                 }
             }
         } catch (e: Exception) {
-            logger.e("DevSiteApi", "Probe failed: ${e.message}")
-            false
+            logger.e("DevSiteApi", "CSV fetch error for $entityPath: ${e.message}")
+            null
         }
     }
 
     /**
-     * Fetches the CSV export for [entityPath] (e.g. "cavita-naturali") from [serverUrl].
+     * Fetches the CSV export for [entityPath], throwing on any error.
+     * Used for subsequent entity fetches once compatibility is already confirmed.
      */
     suspend fun fetchCsv(serverUrl: String, entityPath: String): String {
         val url = "${serverUrl.trimEnd('/')}/export/$entityPath/csv"
