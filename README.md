@@ -33,7 +33,7 @@ OpenKIS Android connects to your OpenKIS server, syncs cave data for offline use
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/openkis-android.git
+   git clone https://github.com/mbound/openkis-android.git
    cd openkis-android
    ```
 
