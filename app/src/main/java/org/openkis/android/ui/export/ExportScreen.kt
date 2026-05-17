@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -128,7 +130,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                         text = when (uiState.selectedFormat) {
                             ExportFormat.KML -> "Google Earth format. Best for viewing caves on a 3D globe."
                             ExportFormat.GPX -> "GPS Exchange format. Import into GPS devices and hiking apps."
-                            ExportFormat.JSON -> "Structured data format. Best for programmatic use."
+                            ExportFormat.JSON -> "Full dataset export — all fields, all records including those without coordinates. Use for offline sharing, backup, or data analysis."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -137,6 +139,8 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
             }
 
             Spacer(modifier = Modifier.weight(1f))
+
+            val hasData = (uiState.caveCount + uiState.springCount + uiState.artificialCount) > 0
 
             // Export button
             Button(
@@ -148,8 +152,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = !uiState.isExporting &&
-                        (uiState.caveCount + uiState.springCount + uiState.artificialCount) > 0
+                enabled = !uiState.isExporting && hasData
             ) {
                 if (uiState.isExporting) {
                     CircularProgressIndicator(
@@ -165,6 +168,21 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                     )
                     Text("Export ${uiState.selectedFormat.label}")
                 }
+            }
+
+            OutlinedButton(
+                onClick = { viewModel.share(context) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = !uiState.isExporting && hasData
+            ) {
+                Icon(
+                    Icons.Default.Share,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text("Share ${uiState.selectedFormat.label}")
             }
         }
     }

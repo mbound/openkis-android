@@ -1,19 +1,24 @@
 package org.openkis.android.ui.export
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.openkis.android.data.export.GpxExporter
 import org.openkis.android.data.export.JsonExporter
 import org.openkis.android.data.export.KmlExporter
 import org.openkis.android.data.repository.CaveRepository
+import java.io.File
 import javax.inject.Inject
 
 enum class ExportFormat(val label: String, val extension: String, val mimeType: String) {
@@ -76,6 +81,52 @@ class ExportViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
                     message = "Exported $total items successfully"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Export failed: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun share(context: Context) {
+        val format = _uiState.value.selectedFormat
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, message = null)
+            try {
+                val caves = repository.getAllCaves().first()
+                val springs = repository.getAllSprings().first()
+                val artificials = repository.getAllArtificials().first()
+
+                val file = withContext(Dispatchers.IO) {
+                    val dir = File(context.cacheDir, "exports").also { it.mkdirs() }
+                    val f = File(dir, "openkis_export.${format.extension}")
+                    f.outputStream().use { out ->
+                        when (format) {
+                            ExportFormat.KML -> kmlExporter.export(out, caves, springs, artificials)
+                            ExportFormat.GPX -> gpxExporter.export(out, caves, springs, artificials)
+                            ExportFormat.JSON -> jsonExporter.export(out, caves, springs, artificials)
+                        }
+                    }
+                    f
+                }
+
+                val uri = FileProvider.getUriForFile(
+                    context, "${context.packageName}.fileprovider", file
+                )
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = format.mimeType
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(intent, "Share OpenKIS export"))
+
+                val total = caves.size + springs.size + artificials.size
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Ready to share $total items"
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
