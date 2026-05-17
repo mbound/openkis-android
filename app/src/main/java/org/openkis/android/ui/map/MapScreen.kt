@@ -5,6 +5,7 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,20 +15,26 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ZoomOutMap
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,16 +49,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
-import org.openkis.android.ui.theme.ArtificialMarker
-import org.openkis.android.ui.theme.CaveMarker
-import org.openkis.android.ui.theme.SpringMarker
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -73,6 +79,7 @@ fun MapScreen(
     val context = LocalContext.current
     var hasZoomedToFit by remember { mutableStateOf(false) }
     var showLayerPanel by remember { mutableStateOf(false) }
+    var showLegend by remember { mutableStateOf(false) }
     var locationEnabled by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val locationOverlayRef = remember { mutableStateOf<MyLocationNewOverlay?>(null) }
@@ -253,10 +260,19 @@ fun MapScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             SmallFloatingActionButton(
-                onClick = { showLayerPanel = !showLayerPanel },
-                containerColor = MaterialTheme.colorScheme.surface
+                onClick = { showLayerPanel = !showLayerPanel; showLegend = false },
+                containerColor = if (showLayerPanel) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surface
             ) {
                 Icon(Icons.Default.Layers, "Layers")
+            }
+
+            SmallFloatingActionButton(
+                onClick = { showLegend = !showLegend; showLayerPanel = false },
+                containerColor = if (showLegend) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surface
+            ) {
+                Icon(Icons.Default.Info, "Legend")
             }
 
             SmallFloatingActionButton(
@@ -353,9 +369,73 @@ fun MapScreen(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    LayerToggle("Caves", CaveMarker, uiState.showCaves) { viewModel.toggleCaves() }
-                    LayerToggle("Springs", SpringMarker, uiState.showSprings) { viewModel.toggleSprings() }
-                    LayerToggle("Artificials", ArtificialMarker, uiState.showArtificials) { viewModel.toggleArtificials() }
+                    val compositor = viewModel.compositor
+                    LayerToggle("Caves", compositor, "caves", uiState.showCaves) { viewModel.toggleCaves() }
+                    LayerToggle("Springs", compositor, "springs", uiState.showSprings) { viewModel.toggleSprings() }
+                    LayerToggle("Artificials", compositor, "artificials", uiState.showArtificials) { viewModel.toggleArtificials() }
+                }
+            }
+        }
+
+        // Legend panel
+        if (showLegend) {
+            Card(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 16.dp, start = 16.dp)
+                    .widthIn(max = 260.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                val compositor = viewModel.compositor
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Legend", style = MaterialTheme.typography.titleSmall)
+                        IconButton(
+                            onClick = { showLegend = false },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+
+                    Text("Natural Caves", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    LegendRow(compositor, "caves", listOf("caves", "hori"), "Horizontal / shallow")
+                    LegendRow(compositor, "caves", listOf("caves", "desc"), "Descending")
+                    LegendRow(compositor, "caves", listOf("caves", "asc"), "Ascending")
+                    LegendRow(compositor, "caves", listOf("caves", "water"), "Water (streams / lakes)")
+                    LegendRow(compositor, "caves", listOf("caves", "emitting"), "Resurgence")
+                    LegendRow(compositor, "caves", listOf("caves", "absorbent"), "Sinkhole")
+                    LegendRow(compositor, "caves", listOf("caves", "blow_during_cold"), "Air blow — cold weather")
+                    LegendRow(compositor, "caves", listOf("caves", "blow_during_heat"), "Air blow — warm weather")
+                    LegendRow(compositor, "caves", listOf("caves", "suck_during_cold"), "Air suction — cold weather")
+                    LegendRow(compositor, "caves", listOf("caves", "suck_during_heat"), "Air suction — warm weather")
+                    LegendRow(compositor, "caves", listOf("caves", "closed"), "Closed / restricted access")
+
+                    Spacer(Modifier.height(12.dp))
+                    Text("Karst Springs", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    LegendRow(compositor, "springs", listOf("springs"), "Spring")
+                    LegendRow(compositor, "springs", listOf("springs", "emitting"), "Emitting")
+                    LegendRow(compositor, "springs", listOf("springs", "absorbent"), "Absorbing")
+                    LegendRow(compositor, "springs", listOf("springs", "blow"), "Air blow")
+                    LegendRow(compositor, "springs", listOf("springs", "suck"), "Air suction")
+
+                    Spacer(Modifier.height(12.dp))
+                    Text("Artificial Cavities", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    LegendRow(compositor, "artificials", listOf("artificials"), "Artificial cavity")
                 }
             }
         }
@@ -415,18 +495,28 @@ fun MapScreen(
 }
 
 @Composable
-private fun LayerToggle(label: String, color: Color, enabled: Boolean, onClick: () -> Unit) {
+private fun LayerToggle(
+    label: String,
+    compositor: IconCompositor,
+    category: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val bitmap = remember(category) {
+        compositor.compose(category, listOf(category)).bitmap.asImageBitmap()
+    }
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .clip(CircleShape)
-                .background(if (enabled) color else Color.Gray)
+        Image(
+            bitmap = bitmap,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            colorFilter = if (enabled) null
+                else ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
@@ -434,5 +524,32 @@ private fun LayerToggle(label: String, color: Color, enabled: Boolean, onClick: 
             style = MaterialTheme.typography.bodyMedium,
             color = if (enabled) MaterialTheme.colorScheme.onSurface else Color.Gray
         )
+    }
+}
+
+@Composable
+private fun LegendRow(
+    compositor: IconCompositor,
+    category: String,
+    layers: List<String>,
+    label: String
+) {
+    val key = "$category:${layers.joinToString(",")}"
+    val bitmap = remember(key) {
+        compositor.compose(category, layers).bitmap.asImageBitmap()
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = null,
+            modifier = Modifier.size(30.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = label, style = MaterialTheme.typography.bodySmall)
     }
 }

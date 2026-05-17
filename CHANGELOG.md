@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-17
+
+### Added
+- Map legend: tap the new Info FAB to open a scrollable panel showing every icon variant for natural caves, karst springs, and artificial cavities with a plain-language description of each modifier (trend, hydrology, meteorology, closure status)
+- Layer toggle buttons in the map now use the actual OpenKIS base PNG icons (caves, springs, artificials) instead of coloured dots; icons are desaturated when a layer is hidden
+
+### Changed
+- Layers and Legend FABs are mutually exclusive — opening one closes the other; both highlight their container colour when active
+
 ## [1.1.2] - 2026-05-17
 
 ### Fixed
