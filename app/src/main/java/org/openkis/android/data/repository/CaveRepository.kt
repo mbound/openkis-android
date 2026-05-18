@@ -1,5 +1,8 @@
 package org.openkis.android.data.repository
 
+import android.content.Context
+import android.net.Uri
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import org.openkis.android.data.local.dao.ArtificialDao
 import org.openkis.android.data.local.dao.CaveDao
@@ -14,6 +17,7 @@ import org.openkis.android.data.remote.DevSiteApi
 import org.openkis.android.data.remote.OpenKisApi
 import org.openkis.android.data.remote.SurveyFetcher
 import org.openkis.android.data.remote.dto.OpenKisItem
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +29,8 @@ class CaveRepository @Inject constructor(
     private val api: OpenKisApi,
     private val devSiteApi: DevSiteApi,
     private val surveyDao: SurveyDao,
-    private val surveyFetcher: SurveyFetcher
+    private val surveyFetcher: SurveyFetcher,
+    @ApplicationContext private val context: Context
 ) {
     // Caves
     fun getAllCaves(): Flow<List<CaveEntity>> = caveDao.getAll()
@@ -121,6 +126,8 @@ class CaveRepository @Inject constructor(
         caveDao.deleteAll()
         springDao.deleteAll()
         artificialDao.deleteAll()
+        surveyDao.deleteAll()
+        File(context.filesDir, "surveys").deleteRecursively()
     }
 
     // Surveys
@@ -134,7 +141,12 @@ class CaveRepository @Inject constructor(
     ): List<SurveyEntity> {
         val fetched = surveyFetcher.fetchSurveys(serverUrl, entityType, dbId)
         surveyDao.deleteByEntity(serverUrl, entityType, dbId)
+        val host = Uri.parse(serverUrl).host?.replace(".", "_") ?: "server"
         val entities = fetched.mapIndexed { i, s ->
+            val localPath = if (s.imageUrl.isNotBlank()) {
+                val file = File(context.filesDir, "surveys/$host/$entityType/$dbId/$i.jpg")
+                if (surveyFetcher.downloadImage(s.imageUrl, file)) file.absolutePath else ""
+            } else ""
             SurveyEntity(
                 serverUrl = serverUrl,
                 entityType = entityType,
@@ -148,7 +160,8 @@ class CaveRepository @Inject constructor(
                 surveyors = s.surveyors,
                 speleoGroups = s.speleoGroups,
                 license = s.license,
-                bibliography = s.bibliography
+                bibliography = s.bibliography,
+                localImagePath = localPath
             )
         }
         surveyDao.insertAll(entities)

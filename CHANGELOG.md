@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.3] - 2026-05-18
+
+### Added
+- Survey images are now downloaded to local storage when tapping "Download Surveys"; the full-resolution image is stored in internal app files and displayed offline without a network connection
+- Tapping a survey image opens a fullscreen in-app viewer (black background, tap anywhere to dismiss) instead of the browser; surveys downloaded before this update fall back gracefully to the browser
+
+### Changed
+- Survey images show full resolution instead of server-generated thumbnails
+- "Clear Cache" now also deletes locally stored survey images
+- DB version bumped to 6 (destructive migration; re-sync required — survey data is re-downloadable)
+
 ## [1.3.2] - 2026-05-18
 
 ### Added

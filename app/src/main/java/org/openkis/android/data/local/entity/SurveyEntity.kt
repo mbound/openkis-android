@@ -20,5 +20,6 @@ data class SurveyEntity(
     val speleoGroups: String = "",
     val license: String = "",
     val bibliography: String = "",
+    val localImagePath: String = "",
     val fetchedAt: Long = System.currentTimeMillis()
 )

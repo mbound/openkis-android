@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.openkis.android.data.debug.DebugLogger
@@ -51,6 +52,27 @@ class SurveyFetcher @Inject constructor(
         }
 
         parseSurveys(html, serverUrl)
+    }
+
+    suspend fun downloadImage(url: String, destFile: File): Boolean = withContext(Dispatchers.IO) {
+        if (url.isBlank()) return@withContext false
+        try {
+            val request = Request.Builder().url(url).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    logger.w("SurveyFetcher", "Image download HTTP ${response.code}: $url")
+                    return@use false
+                }
+                destFile.parentFile?.mkdirs()
+                response.body?.byteStream()?.use { input ->
+                    destFile.outputStream().use { output -> input.copyTo(output) }
+                }
+                true
+            }
+        } catch (e: Exception) {
+            logger.e("SurveyFetcher", "Image download error: ${e.message}")
+            false
+        }
     }
 
     private fun parseSurveys(html: String, serverUrl: String): List<SurveyData> {

@@ -24,4 +24,7 @@ interface SurveyDao {
 
     @Query("DELETE FROM surveys WHERE serverUrl = :url AND entityType = :type AND dbId = :id")
     suspend fun deleteByEntity(url: String, type: String, id: String)
+
+    @Query("DELETE FROM surveys")
+    suspend fun deleteAll()
 }

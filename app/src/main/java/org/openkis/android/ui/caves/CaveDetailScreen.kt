@@ -34,10 +34,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import org.openkis.android.R
 import org.openkis.android.data.local.entity.SurveyEntity
+import java.io.File
 import org.openkis.android.ui.util.resolveFieldValue
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -303,13 +311,7 @@ private fun SurveysSection(
                     )
                 } else {
                     state.surveys.forEach { survey ->
-                        SurveyCard(survey = survey, onImageClick = { url ->
-                            if (url.isNotBlank()) {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                )
-                            }
-                        })
+                        SurveyCard(survey = survey)
                     }
                     OutlinedButton(
                         onClick = onDownload,
@@ -345,7 +347,33 @@ private fun SurveysSection(
 }
 
 @Composable
-private fun SurveyCard(survey: SurveyEntity, onImageClick: (String) -> Unit) {
+private fun SurveyCard(survey: SurveyEntity) {
+    val context = LocalContext.current
+    var showFullscreen by remember { mutableStateOf(false) }
+
+    // Full-screen image viewer dialog
+    if (showFullscreen) {
+        Dialog(
+            onDismissRequest = { showFullscreen = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .clickable { showFullscreen = false },
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = File(survey.localImagePath),
+                    contentDescription = survey.title,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.Fit
+                )
+            }
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(2.dp)
@@ -359,14 +387,27 @@ private fun SurveyCard(survey: SurveyEntity, onImageClick: (String) -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            if (survey.thumbnailUrl.isNotBlank()) {
+            val imageModel: Any? = when {
+                survey.localImagePath.isNotBlank() -> File(survey.localImagePath)
+                survey.thumbnailUrl.isNotBlank() -> survey.thumbnailUrl
+                else -> null
+            }
+
+            if (imageModel != null) {
                 AsyncImage(
-                    model = survey.thumbnailUrl,
+                    model = imageModel,
                     contentDescription = survey.title,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
-                        .clickable { onImageClick(survey.imageUrl) },
+                        .clickable {
+                            if (survey.localImagePath.isNotBlank()) {
+                                showFullscreen = true
+                            } else if (survey.imageUrl.isNotBlank()) {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(survey.imageUrl))
+                                )
+                            }
+                        },
                     contentScale = ContentScale.Fit
                 )
                 Spacer(modifier = Modifier.height(8.dp))
