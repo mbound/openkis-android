@@ -7,7 +7,7 @@ import org.openkis.android.R
 
 object MetadataLabels {
 
-    val meteorology: Map<String, @StringRes Int> = mapOf(
+    val meteorology: Map<String, Int> = mapOf(
         "blow_during_heat" to R.string.meteo_blow_during_heat,
         "blow_during_cold" to R.string.meteo_blow_during_cold,
         "suck_during_heat" to R.string.meteo_suck_during_heat,
@@ -19,7 +19,7 @@ object MetadataLabels {
         "none_in_cold" to R.string.meteo_none_in_cold
     )
 
-    val hydrology: Map<String, @StringRes Int> = mapOf(
+    val hydrology: Map<String, Int> = mapOf(
         "temporary flooding" to R.string.hydro_temporary_flooding,
         "absorbent" to R.string.hydro_absorbent,
         "emitting" to R.string.hydro_emitting,
@@ -45,7 +45,7 @@ object MetadataLabels {
         "snow wells" to R.string.hydro_snow_wells
     )
 
-    val epoch: Map<String, @StringRes Int> = mapOf(
+    val epoch: Map<String, Int> = mapOf(
         "x" to R.string.epoch_not_determined,
         "a" to R.string.epoch_prehistoric,
         "b" to R.string.epoch_protohistoric,
@@ -58,11 +58,16 @@ object MetadataLabels {
 }
 
 @Composable
-private fun resolveMultiValue(raw: String, lookup: Map<String, Int>): String =
-    raw.split(",")
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
-        .joinToString(", ") { code -> lookup[code]?.let { stringResource(it) } ?: code }
+private fun resolveMultiValue(raw: String, lookup: Map<String, Int>): String {
+    val codes = raw.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    if (codes.isEmpty()) return ""
+    val parts = ArrayList<String>(codes.size)
+    for (code in codes) {
+        val resId = lookup[code]
+        parts.add(if (resId != null) stringResource(resId) else code)
+    }
+    return parts.joinToString(", ")
+}
 
 @Composable
 fun resolveFieldValue(@StringRes labelRes: Int, raw: String): String = when (labelRes) {

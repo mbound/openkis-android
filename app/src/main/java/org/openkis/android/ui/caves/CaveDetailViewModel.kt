@@ -1,6 +1,5 @@
 package org.openkis.android.ui.caves
 
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,8 +17,8 @@ data class DetailData(
     val subtitle: String = "",
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
-    val highlights: List<Pair<@StringRes Int, String>> = emptyList(),
-    val fields: List<Pair<@StringRes Int, String>> = emptyList(),
+    val highlights: List<Pair<Int, String>> = emptyList(),
+    val fields: List<Pair<Int, String>> = emptyList(),
     val serverUrl: String = "",
     val dbId: String = "",
     val entityType: String = ""
