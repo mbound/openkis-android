@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -24,18 +25,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import org.openkis.android.R
 import org.openkis.android.ui.caves.CaveDetailScreen
 import org.openkis.android.ui.caves.CaveListScreen
 import org.openkis.android.ui.export.ExportScreen
 import org.openkis.android.ui.map.MapScreen
 import org.openkis.android.ui.settings.SettingsScreen
 
-sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
-    data object Map : Screen("map", "Map", Icons.Default.Map)
-    data object Caves : Screen("caves", "Browse", Icons.Default.Explore)
-    data object Export : Screen("export", "Export", Icons.Default.FileDownload)
-    data object Settings : Screen("settings", "Settings", Icons.Default.Settings)
-    data object CaveDetail : Screen("cave/{type}/{code}", "Detail", Icons.Default.Explore)
+sealed class Screen(val route: String, val labelRes: Int, val icon: ImageVector) {
+    data object Map : Screen("map", R.string.tab_map, Icons.Default.Map)
+    data object Caves : Screen("caves", R.string.tab_caves, Icons.Default.Explore)
+    data object Export : Screen("export", R.string.tab_export, Icons.Default.FileDownload)
+    data object Settings : Screen("settings", R.string.tab_settings, Icons.Default.Settings)
+    data object CaveDetail : Screen("cave/{type}/{code}", R.string.tab_caves, Icons.Default.Explore)
 }
 
 val bottomNavItems = listOf(Screen.Map, Screen.Caves, Screen.Export, Screen.Settings)
@@ -102,8 +104,8 @@ private fun BottomBar(navController: NavHostController) {
     NavigationBar {
         bottomNavItems.forEach { screen ->
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = screen.label) },
-                label = { Text(screen.label) },
+                icon = { Icon(screen.icon, contentDescription = stringResource(screen.labelRes)) },
+                label = { Text(stringResource(screen.labelRes)) },
                 selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                 onClick = {
                     navController.navigate(screen.route) {
