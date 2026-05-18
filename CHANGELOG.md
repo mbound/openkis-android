@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-17
+
+### Added
+- On-demand survey download in cave and artificial cavity detail screens: tap "Download Surveys" to fetch, parse, and cache all survey records (plan drawings, sections, authors, dates, licenses) from the server detail page
+- Surveys are stored in the local Room database; subsequent opens show cached data immediately without re-fetching
+- Survey images load inline from their server URLs via Coil; tapping a thumbnail opens the full-size image in the browser
+- Separate "Export Surveys" and "Share Surveys" options in the Export screen — survey metadata is exported as a distinct JSON file, independent of the main KML/GPX/JSON map export
+- Export screen now shows a survey record count and the survey export section only appears when surveys have been downloaded
+
+### Changed
+- DB version bumped to 4 (re-sync required after upgrade; data is not lost, only the local cache needs refreshing)
+
 ## [1.2.1] - 2026-05-17
 
 ### Added

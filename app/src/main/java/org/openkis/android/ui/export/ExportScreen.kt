@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -20,6 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -33,7 +37,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -53,6 +56,12 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
         ActivityResultContracts.CreateDocument(uiState.selectedFormat.mimeType)
     ) { uri ->
         uri?.let { viewModel.export(context, it) }
+    }
+
+    val createSurveyFileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let { viewModel.exportSurveys(context, it) }
     }
 
     LaunchedEffect(uiState.message) {
@@ -78,6 +87,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -138,11 +148,9 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-
             val hasData = (uiState.caveCount + uiState.springCount + uiState.artificialCount) > 0
 
-            // Export button
+            // Map/GPS export buttons
             Button(
                 onClick = {
                     val date = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
@@ -183,6 +191,75 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text("Share ${uiState.selectedFormat.label}")
+            }
+
+            // Survey export (separate section — only shown when surveys are cached)
+            if (uiState.surveyCount > 0) {
+                HorizontalDivider()
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(2.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Survey Data",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "${uiState.surveyCount} records",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Cached survey metadata (plan drawings, authors, dates, licenses). Exported separately from map data as JSON.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        val date = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+                        createSurveyFileLauncher.launch("openkis_surveys_$date.json")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !uiState.isExporting
+                ) {
+                    Icon(
+                        Icons.Default.Map,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("Export Surveys (JSON)")
+                }
+
+                OutlinedButton(
+                    onClick = { viewModel.shareSurveys(context) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !uiState.isExporting
+                ) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("Share Surveys")
+                }
             }
         }
     }

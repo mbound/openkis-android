@@ -24,5 +24,6 @@ data class CaveEntity(
     val closed: String = "",
     val photoUrl: String = "",
     val serverUrl: String = "",
+    val dbId: String = "",
     val lastSync: Long = System.currentTimeMillis()
 )

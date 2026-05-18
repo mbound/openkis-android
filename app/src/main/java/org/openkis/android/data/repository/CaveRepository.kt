@@ -4,12 +4,15 @@ import kotlinx.coroutines.flow.Flow
 import org.openkis.android.data.local.dao.ArtificialDao
 import org.openkis.android.data.local.dao.CaveDao
 import org.openkis.android.data.local.dao.SpringDao
+import org.openkis.android.data.local.dao.SurveyDao
 import org.openkis.android.data.local.entity.ArtificialEntity
 import org.openkis.android.data.local.entity.CaveEntity
 import org.openkis.android.data.local.entity.SpringEntity
+import org.openkis.android.data.local.entity.SurveyEntity
 import org.openkis.android.data.remote.CsvParser
 import org.openkis.android.data.remote.DevSiteApi
 import org.openkis.android.data.remote.OpenKisApi
+import org.openkis.android.data.remote.SurveyFetcher
 import org.openkis.android.data.remote.dto.OpenKisItem
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,7 +23,9 @@ class CaveRepository @Inject constructor(
     private val springDao: SpringDao,
     private val artificialDao: ArtificialDao,
     private val api: OpenKisApi,
-    private val devSiteApi: DevSiteApi
+    private val devSiteApi: DevSiteApi,
+    private val surveyDao: SurveyDao,
+    private val surveyFetcher: SurveyFetcher
 ) {
     // Caves
     fun getAllCaves(): Flow<List<CaveEntity>> = caveDao.getAll()
@@ -117,6 +122,42 @@ class CaveRepository @Inject constructor(
         springDao.deleteAll()
         artificialDao.deleteAll()
     }
+
+    // Surveys
+    suspend fun getSurveysFromDb(serverUrl: String, entityType: String, dbId: String): List<SurveyEntity> =
+        surveyDao.getByEntity(serverUrl, entityType, dbId)
+
+    suspend fun fetchAndCacheSurveys(
+        serverUrl: String,
+        entityType: String,
+        dbId: String
+    ): List<SurveyEntity> {
+        val fetched = surveyFetcher.fetchSurveys(serverUrl, entityType, dbId)
+        surveyDao.deleteByEntity(serverUrl, entityType, dbId)
+        val entities = fetched.mapIndexed { i, s ->
+            SurveyEntity(
+                serverUrl = serverUrl,
+                entityType = entityType,
+                dbId = dbId,
+                surveyIndex = i,
+                title = s.title,
+                imageUrl = s.imageUrl,
+                thumbnailUrl = s.thumbnailUrl,
+                date = s.date,
+                author = s.author,
+                surveyors = s.surveyors,
+                speleoGroups = s.speleoGroups,
+                license = s.license,
+                bibliography = s.bibliography
+            )
+        }
+        surveyDao.insertAll(entities)
+        return entities
+    }
+
+    fun getAllSurveys(): Flow<List<SurveyEntity>> = surveyDao.getAll()
+
+    suspend fun getSurveyCount(): Int = surveyDao.count()
 }
 
 // Parses a decimal-degree coordinate string; returns 0.0 if the value is outside
@@ -144,7 +185,8 @@ private fun Map<String, String>.toCaveEntity(serverUrl: String): CaveEntity? {
         province = get("Provincia") ?: "",
         municipality = get("Comune") ?: "",
         closed = get("Chiuso") ?: "",
-        serverUrl = serverUrl
+        serverUrl = serverUrl,
+        dbId = getOrDefault("id", "")
     )
 }
 
@@ -188,7 +230,8 @@ private fun Map<String, String>.toArtificialEntityFromDevSite(serverUrl: String)
         region = get("Regione") ?: "",
         province = get("Provincia") ?: "",
         municipality = get("Comune") ?: "",
-        serverUrl = serverUrl
+        serverUrl = serverUrl,
+        dbId = getOrDefault("id", "")
     )
 }
 
@@ -206,7 +249,8 @@ private fun OpenKisItem.toCaveEntity(serverUrl: String) = CaveEntity(
     hydrology = hydrology,
     meteorology = meteorology,
     closed = closed,
-    serverUrl = serverUrl
+    serverUrl = serverUrl,
+    dbId = id
 )
 
 private fun OpenKisItem.toSpringEntity(serverUrl: String) = SpringEntity(
@@ -236,5 +280,6 @@ private fun OpenKisItem.toArtificialEntity(serverUrl: String) = ArtificialEntity
     epoch = epoch,
     typology = typology,
     category = category,
-    serverUrl = serverUrl
+    serverUrl = serverUrl,
+    dbId = id
 )

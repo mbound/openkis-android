@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import org.openkis.android.data.export.GpxExporter
 import org.openkis.android.data.export.JsonExporter
 import org.openkis.android.data.export.KmlExporter
+import org.openkis.android.data.export.SurveyExporter
 import org.openkis.android.data.repository.CaveRepository
 import java.io.File
 import javax.inject.Inject
@@ -32,6 +33,7 @@ data class ExportUiState(
     val caveCount: Int = 0,
     val springCount: Int = 0,
     val artificialCount: Int = 0,
+    val surveyCount: Int = 0,
     val isExporting: Boolean = false,
     val message: String? = null
 )
@@ -41,7 +43,8 @@ class ExportViewModel @Inject constructor(
     private val repository: CaveRepository,
     private val kmlExporter: KmlExporter,
     private val gpxExporter: GpxExporter,
-    private val jsonExporter: JsonExporter
+    private val jsonExporter: JsonExporter,
+    private val surveyExporter: SurveyExporter
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExportUiState())
@@ -52,7 +55,8 @@ class ExportViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 caveCount = repository.getCaveCount(),
                 springCount = repository.getSpringCount(),
-                artificialCount = repository.getArtificialCount()
+                artificialCount = repository.getArtificialCount(),
+                surveyCount = repository.getSurveyCount()
             )
         }
     }
@@ -132,6 +136,60 @@ class ExportViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
                     message = "Export failed: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun exportSurveys(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, message = null)
+            try {
+                val surveys = repository.getAllSurveys().first()
+                context.contentResolver.openOutputStream(uri)?.use { output ->
+                    surveyExporter.export(output, surveys)
+                }
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Exported ${surveys.size} survey records"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Survey export failed: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun shareSurveys(context: Context) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, message = null)
+            try {
+                val surveys = repository.getAllSurveys().first()
+                val file = withContext(Dispatchers.IO) {
+                    val dir = File(context.cacheDir, "exports").also { it.mkdirs() }
+                    val f = File(dir, "openkis_surveys.json")
+                    f.outputStream().use { out -> surveyExporter.export(out, surveys) }
+                    f
+                }
+                val uri = FileProvider.getUriForFile(
+                    context, "${context.packageName}.fileprovider", file
+                )
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/json"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(intent, "Share survey data"))
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Ready to share ${surveys.size} survey records"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Survey export failed: ${e.message}"
                 )
             }
         }

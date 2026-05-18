@@ -15,8 +15,8 @@ android {
         applicationId = "org.openkis.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21
-        versionName = "1.2.1"
+        versionCode = 22
+        versionName = "1.3.0"
     }
 
     signingConfigs {
@@ -107,4 +107,10 @@ dependencies {
 
     // DataStore
     implementation(libs.datastore.preferences)
+
+    // Image loading (survey thumbnails in detail screen)
+    implementation(libs.coil.compose)
+
+    // HTML parsing (survey scraper)
+    implementation(libs.jsoup)
 }

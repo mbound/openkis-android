@@ -16,6 +16,7 @@ import org.openkis.android.data.local.dao.ArtificialDao
 import org.openkis.android.data.local.dao.CaveDao
 import org.openkis.android.data.local.dao.ServerDao
 import org.openkis.android.data.local.dao.SpringDao
+import org.openkis.android.data.local.dao.SurveyDao
 import org.openkis.android.data.remote.DynamicBaseUrlInterceptor
 import org.openkis.android.data.remote.OpenKisApi
 import retrofit2.Retrofit
@@ -48,6 +49,9 @@ object AppModule {
 
     @Provides
     fun provideServerDao(db: AppDatabase): ServerDao = db.serverDao()
+
+    @Provides
+    fun provideSurveyDao(db: AppDatabase): SurveyDao = db.surveyDao()
 
     @Provides
     @Singleton

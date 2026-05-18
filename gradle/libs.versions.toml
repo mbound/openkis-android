@@ -13,6 +13,8 @@ composeBom = "2024.12.01"
 osmdroid = "6.1.20"
 serialization = "1.7.3"
 hiltNavigationCompose = "1.2.0"
+coil = "2.7.0"
+jsoup = "1.17.2"
 
 [libraries]
 # Compose BOM
@@ -60,6 +62,12 @@ osmdroid = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "o
 
 # DataStore
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version = "1.1.1" }
+
+# Image loading
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# HTML parsing
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
