@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-05-17
+
+### Added
+- Import from JSON in the Export screen: tap "Import from JSON" to pick a previously exported OpenKIS JSON file; caves, springs, and artificial cavities are upserted — existing records with matching codes are updated, new ones are added
+- Artificial cavity icons on the map and in the legend now reflect vertical trend (horizontal, descending, ascending), type (resurgence, absorbing), and closure status — matching the full icon set from the OpenKIS PHP backend
+- Export screen now always shows the Import section at the bottom, independent of what data is cached
+
+### Fixed
+- Artificial cavities were missing `depthNegative`, `depthPositive`, and `closed` fields in the entity — they were parsed from the server but discarded. These are now stored and used for icon composition.
+
+### Changed
+- DB version bumped to 5 (automatic migration; no data loss)
+
 ## [1.3.0] - 2026-05-17
 
 ### Added

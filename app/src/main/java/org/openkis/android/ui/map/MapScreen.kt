@@ -435,7 +435,12 @@ fun MapScreen(
                     Spacer(Modifier.height(12.dp))
                     Text("Artificial Cavities", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    LegendRow(compositor, "artificials", listOf("artificials"), "Artificial cavity")
+                    LegendRow(compositor, "artificials", listOf("artificials", "hori"), "Horizontal / shallow")
+                    LegendRow(compositor, "artificials", listOf("artificials", "desc"), "Descending")
+                    LegendRow(compositor, "artificials", listOf("artificials", "asc"), "Ascending")
+                    LegendRow(compositor, "artificials", listOf("artificials", "emitting"), "Resurgence / spring")
+                    LegendRow(compositor, "artificials", listOf("artificials", "absorbent"), "Absorbing")
+                    LegendRow(compositor, "artificials", listOf("artificials", "closed"), "Closed / restricted access")
                 }
             }
         }

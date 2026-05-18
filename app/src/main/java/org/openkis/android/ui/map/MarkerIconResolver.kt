@@ -49,6 +49,26 @@ object MarkerIconResolver {
     fun springIconLayers(@Suppress("UNUSED_PARAMETER") spring: SpringEntity): List<String> =
         listOf("springs")
 
-    fun artificialIconLayers(@Suppress("UNUSED_PARAMETER") art: ArtificialEntity): List<String> =
-        listOf("artificials")
+    fun artificialIconLayers(art: ArtificialEntity): List<String> = buildList {
+        add("artificials")
+
+        // Trend: same logic as caves — compare absolute depth values
+        val neg = art.depthNegative.toDoubleOrNull()?.let { kotlin.math.abs(it) } ?: 0.0
+        val pos = art.depthPositive.toDoubleOrNull()?.let { kotlin.math.abs(it) } ?: 0.0
+        when {
+            neg == 0.0 && pos == 0.0 -> add("hori")
+            neg >= pos -> add("desc")
+            else -> add("asc")
+        }
+
+        // Type: derived from name/synonyms (no hydrology field on artificials)
+        val nameText = "${art.name} ${art.synonyms}".lowercase()
+        when {
+            nameText.contains("risorgenza") || nameText.contains("sorgente") -> add("emitting")
+            nameText.contains("inghiottitoio") -> add("absorbent")
+        }
+
+        // Closure
+        if (art.closed.isNotBlank() && art.closed != "N") add("closed")
+    }
 }

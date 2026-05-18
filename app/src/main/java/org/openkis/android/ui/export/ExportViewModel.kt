@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.openkis.android.data.export.GpxExporter
 import org.openkis.android.data.export.JsonExporter
+import org.openkis.android.data.export.JsonImporter
 import org.openkis.android.data.export.KmlExporter
 import org.openkis.android.data.export.SurveyExporter
 import org.openkis.android.data.repository.CaveRepository
@@ -44,7 +45,8 @@ class ExportViewModel @Inject constructor(
     private val kmlExporter: KmlExporter,
     private val gpxExporter: GpxExporter,
     private val jsonExporter: JsonExporter,
-    private val surveyExporter: SurveyExporter
+    private val surveyExporter: SurveyExporter,
+    private val jsonImporter: JsonImporter
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExportUiState())
@@ -190,6 +192,30 @@ class ExportViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
                     message = "Survey export failed: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun importJson(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, message = null)
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { jsonImporter.import(it) }
+                        ?: throw Exception("Could not open file")
+                }
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    caveCount = repository.getCaveCount(),
+                    springCount = repository.getSpringCount(),
+                    artificialCount = repository.getArtificialCount(),
+                    message = "Imported ${result.caves} caves, ${result.springs} springs, ${result.artificials} artificials"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Import failed: ${e.message}"
                 )
             }
         }

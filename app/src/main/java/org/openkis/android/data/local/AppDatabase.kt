@@ -21,7 +21,7 @@ import org.openkis.android.data.local.entity.SurveyEntity
         ServerEntity::class,
         SurveyEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
