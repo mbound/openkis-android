@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.4] - 2026-05-18
+
+### Added
+- "Clear Survey Data" button in the cave/artificial detail screen (shown when surveys are loaded) — removes local images and cached records for that entry only, freeing space without affecting other caves
+- "Clear Survey Data" button in Settings — removes all survey images and records globally while keeping the core cave, spring, and artificial dataset intact
+
 ## [1.3.3] - 2026-05-18
 
 ### Added
