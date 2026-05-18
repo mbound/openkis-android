@@ -1,5 +1,6 @@
 package org.openkis.android.ui.caves
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.openkis.android.R
 import org.openkis.android.data.local.entity.SurveyEntity
 import org.openkis.android.data.repository.CaveRepository
 import javax.inject.Inject
@@ -16,8 +18,8 @@ data class DetailData(
     val subtitle: String = "",
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
-    val highlights: List<Pair<String, String>> = emptyList(),
-    val fields: List<Pair<String, String>> = emptyList(),
+    val highlights: List<Pair<@StringRes Int, String>> = emptyList(),
+    val fields: List<Pair<@StringRes Int, String>> = emptyList(),
     val serverUrl: String = "",
     val dbId: String = "",
     val entityType: String = ""
@@ -56,7 +58,6 @@ class CaveDetailViewModel @Inject constructor(
             }
             _detail.value = data
 
-            // Check for cached surveys and pre-populate state
             if (data != null && data.dbId.isNotBlank() && data.entityType.isNotBlank()) {
                 val cached = repository.getSurveysFromDb(data.serverUrl, data.entityType, data.dbId)
                 if (cached.isNotEmpty()) {
@@ -93,24 +94,24 @@ class CaveDetailViewModel @Inject constructor(
             latitude = cave.latitude,
             longitude = cave.longitude,
             highlights = listOfNotNull(
-                cave.elevation.takeIf { it.isNotBlank() }?.let { "Elevation" to "${it}m" },
-                cave.lengthTotal.takeIf { it.isNotBlank() }?.let { "Length" to "${it}m" },
-                cave.depthTotal.takeIf { it.isNotBlank() }?.let { "Depth" to "${it}m" }
+                cave.elevation.takeIf { it.isNotBlank() }?.let { R.string.highlight_elevation to "${it}m" },
+                cave.lengthTotal.takeIf { it.isNotBlank() }?.let { R.string.highlight_length to "${it}m" },
+                cave.depthTotal.takeIf { it.isNotBlank() }?.let { R.string.highlight_depth to "${it}m" }
             ),
             fields = listOf(
-                "Code" to cave.code,
-                "Name" to cave.name,
-                "Synonyms" to cave.synonyms,
-                "Region" to cave.region,
-                "Province" to cave.province,
-                "Municipality" to cave.municipality,
-                "Locality" to cave.locality,
-                "Depth +" to cave.depthPositive,
-                "Depth -" to cave.depthNegative,
-                "Hydrology" to cave.hydrology,
-                "Meteorology" to cave.meteorology,
-                "Description" to cave.description,
-                "Closed" to cave.closed
+                R.string.label_code to cave.code,
+                R.string.label_name to cave.name,
+                R.string.label_synonyms to cave.synonyms,
+                R.string.label_region to cave.region,
+                R.string.label_province to cave.province,
+                R.string.label_municipality to cave.municipality,
+                R.string.label_locality to cave.locality,
+                R.string.label_depth_positive to cave.depthPositive,
+                R.string.label_depth_negative to cave.depthNegative,
+                R.string.label_hydrology to cave.hydrology,
+                R.string.label_meteorology to cave.meteorology,
+                R.string.label_description to cave.description,
+                R.string.label_closed to cave.closed
             ),
             serverUrl = cave.serverUrl,
             dbId = cave.dbId,
@@ -125,23 +126,23 @@ class CaveDetailViewModel @Inject constructor(
             latitude = spring.latitude,
             longitude = spring.longitude,
             highlights = listOfNotNull(
-                spring.elevation.takeIf { it.isNotBlank() }?.let { "Elevation" to "${it}m" },
-                spring.flowAverage.takeIf { it.isNotBlank() }?.let { "Avg Flow" to it },
-                spring.flowMax.takeIf { it.isNotBlank() }?.let { "Max Flow" to it }
+                spring.elevation.takeIf { it.isNotBlank() }?.let { R.string.highlight_elevation to "${it}m" },
+                spring.flowAverage.takeIf { it.isNotBlank() }?.let { R.string.highlight_avg_flow to it },
+                spring.flowMax.takeIf { it.isNotBlank() }?.let { R.string.highlight_max_flow to it }
             ),
             fields = listOf(
-                "Code" to spring.code,
-                "Name" to spring.name,
-                "Linked Cave" to spring.caveCode,
-                "Region" to spring.region,
-                "Province" to spring.province,
-                "Municipality" to spring.municipality,
-                "Flow Min" to spring.flowMin,
-                "Flow Max" to spring.flowMax,
-                "Flow Average" to spring.flowAverage,
-                "Usage" to spring.usage,
-                "Utilization" to spring.utilization,
-                "Description" to spring.description
+                R.string.label_code to spring.code,
+                R.string.label_name to spring.name,
+                R.string.label_linked_cave to spring.caveCode,
+                R.string.label_region to spring.region,
+                R.string.label_province to spring.province,
+                R.string.label_municipality to spring.municipality,
+                R.string.label_flow_min to spring.flowMin,
+                R.string.label_flow_max to spring.flowMax,
+                R.string.label_flow_avg to spring.flowAverage,
+                R.string.label_usage to spring.usage,
+                R.string.label_utilization to spring.utilization,
+                R.string.label_description to spring.description
             )
             // Springs have no survey pages; entityType left blank → no surveys section shown
         )
@@ -155,24 +156,25 @@ class CaveDetailViewModel @Inject constructor(
             latitude = art.latitude,
             longitude = art.longitude,
             highlights = listOfNotNull(
-                art.elevation.takeIf { it.isNotBlank() }?.let { "Elevation" to "${it}m" },
-                art.lengthTotal.takeIf { it.isNotBlank() }?.let { "Length" to "${it}m" },
-                art.depthTotal.takeIf { it.isNotBlank() }?.let { "Depth" to "${it}m" }
+                art.elevation.takeIf { it.isNotBlank() }?.let { R.string.highlight_elevation to "${it}m" },
+                art.lengthTotal.takeIf { it.isNotBlank() }?.let { R.string.highlight_length to "${it}m" },
+                art.depthTotal.takeIf { it.isNotBlank() }?.let { R.string.highlight_depth to "${it}m" }
             ),
             fields = listOf(
-                "Code" to art.code,
-                "Name" to art.name,
-                "Synonyms" to art.synonyms,
-                "Year" to art.year,
-                "Epoch" to art.epoch,
-                "Typology" to art.typology,
-                "Category" to art.category,
-                "Address" to art.address,
-                "Region" to art.region,
-                "Province" to art.province,
-                "Municipality" to art.municipality,
-                "Locality" to art.locality,
-                "Description" to art.description
+                R.string.label_code to art.code,
+                R.string.label_name to art.name,
+                R.string.label_synonyms to art.synonyms,
+                R.string.label_year to art.year,
+                R.string.label_epoch to art.epoch,
+                R.string.label_typology to art.typology,
+                R.string.label_category to art.category,
+                R.string.label_address to art.address,
+                R.string.label_region to art.region,
+                R.string.label_province to art.province,
+                R.string.label_municipality to art.municipality,
+                R.string.label_locality to art.locality,
+                R.string.label_closed to art.closed,
+                R.string.label_description to art.description
             ),
             serverUrl = art.serverUrl,
             dbId = art.dbId,

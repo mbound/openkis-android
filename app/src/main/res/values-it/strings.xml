@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navigation tabs -->
+    <string name="tab_map">Mappa</string>
+    <string name="tab_caves">Esplora</string>
+    <string name="tab_export">Esporta</string>
+    <string name="tab_settings">Impostazioni</string>
+
+    <!-- Entity type labels -->
+    <string name="type_caves">Grotte naturali</string>
+    <string name="type_artificials">Cavità artificiali</string>
+    <string name="type_springs">Sorgenti carsiche</string>
+
+    <!-- Field labels — shared -->
+    <string name="label_code">Codice</string>
+    <string name="label_name">Nome</string>
+    <string name="label_synonyms">Sinonimi</string>
+    <string name="label_elevation">Quota</string>
+    <string name="label_depth">Profondità</string>
+    <string name="label_depth_positive">Profondità (ascendente)</string>
+    <string name="label_depth_negative">Profondità (discendente)</string>
+    <string name="label_length">Lunghezza</string>
+    <string name="label_coordinates">Coordinate</string>
+    <string name="label_region">Regione</string>
+    <string name="label_province">Provincia</string>
+    <string name="label_municipality">Comune</string>
+    <string name="label_locality">Località</string>
+    <string name="label_description">Descrizione</string>
+    <string name="label_closed">Chiusa</string>
+    <string name="label_address">Indirizzo</string>
+
+    <!-- Field labels — caves -->
+    <string name="label_hydrology">Idrologia</string>
+    <string name="label_meteorology">Meteorologia</string>
+
+    <!-- Field labels — springs -->
+    <string name="label_flow_max">Portata massima</string>
+    <string name="label_flow_min">Portata minima</string>
+    <string name="label_flow_avg">Portata media</string>
+    <string name="label_usage">Utilizzo</string>
+    <string name="label_utilization">Sfruttamento</string>
+    <string name="label_linked_cave">Cavità collegata</string>
+
+    <!-- Field labels — artificials -->
+    <string name="label_year">Anno</string>
+    <string name="label_epoch">Epoca</string>
+    <string name="label_typology">Tipologia</string>
+    <string name="label_category">Categoria</string>
+
+    <!-- Detail highlight chips -->
+    <string name="highlight_elevation">Quota</string>
+    <string name="highlight_length">Lunghezza</string>
+    <string name="highlight_depth">Profondità</string>
+    <string name="highlight_avg_flow">Portata media</string>
+    <string name="highlight_max_flow">Portata max</string>
+
+    <!-- Metadata values — meteorology -->
+    <string name="meteo_blow_during_heat">Soffia con il caldo</string>
+    <string name="meteo_blow_during_cold">Soffia con il freddo</string>
+    <string name="meteo_suck_during_heat">Aspira con il caldo</string>
+    <string name="meteo_suck_during_cold">Aspira con il freddo</string>
+    <string name="meteo_none">Nessuna circolazione</string>
+    <string name="meteo_blow_always">Soffia sempre</string>
+    <string name="meteo_suck_always">Aspira sempre</string>
+    <string name="meteo_none_in_heat">Nessuna circolazione in estate</string>
+    <string name="meteo_none_in_cold">Nessuna circolazione in inverno</string>
+
+    <!-- Metadata values — hydrology -->
+    <string name="hydro_temporary_flooding">Allagamenti temporanei</string>
+    <string name="hydro_absorbent">Assorbente</string>
+    <string name="hydro_emitting">Emittente</string>
+    <string name="hydro_permanent_absorbent">Assorbente permanente</string>
+    <string name="hydro_temporary_absorbent">Assorbente temporanea</string>
+    <string name="hydro_permanent_issuing">Emittente permanente</string>
+    <string name="hydro_temporary_issuing">Emittente temporanea</string>
+    <string name="hydro_lakes">Laghi</string>
+    <string name="hydro_permanent_lakes">Laghi permanenti</string>
+    <string name="hydro_temporary_lakes">Laghi temporanei</string>
+    <string name="hydro_slight_flows">Lievi scorrimenti</string>
+    <string name="hydro_dry">Secca</string>
+    <string name="hydro_siphons">Sifoni</string>
+    <string name="hydro_permanent_siphons">Sifoni permanenti</string>
+    <string name="hydro_temporary_siphons">Sifoni temporanei</string>
+    <string name="hydro_only_dripping">Solo stillicidio</string>
+    <string name="hydro_torrents">Torrenti</string>
+    <string name="hydro_permanent_torrents">Torrenti permanenti</string>
+    <string name="hydro_temporary_torrents">Torrenti temporanei</string>
+    <string name="hydro_temporary_ice">Ghiaccio temporaneo</string>
+    <string name="hydro_permanent_ice">Ghiaccio permanente</string>
+    <string name="hydro_snow_wells">Pozzi a neve</string>
+
+    <!-- Metadata values — epoch -->
+    <string name="epoch_not_determined">Non rilevabile</string>
+    <string name="epoch_prehistoric">Preistoria (prima del 3.500 a.C.)</string>
+    <string name="epoch_protohistoric">Protostorica (3.500–750 a.C.)</string>
+    <string name="epoch_ancient">Età antica (750 a.C. – 476 d.C.)</string>
+    <string name="epoch_medieval">Età medievale (476–1492)</string>
+    <string name="epoch_modern">Età moderna (1492–1789)</string>
+    <string name="epoch_contemporary">Età contemporanea (1789–1899)</string>
+    <string name="epoch_twentieth">Novecento</string>
+
+    <!-- Metadata values — closed / yes-no -->
+    <string name="closed_yes">Sì</string>
+    <string name="closed_no">No</string>
+    <string name="yes">Sì</string>
+    <string name="no">No</string>
+
+    <!-- Metadata values — spring usage -->
+    <string name="usage_free">Sorgente libera</string>
+    <string name="usage_captured">Sorgente captata</string>
+
+    <!-- Metadata values — spring utilization -->
+    <string name="utilization_drinking">Acqua potabile</string>
+    <string name="utilization_agricultural">Agricolo</string>
+    <string name="utilization_industrial">Industriale</string>
+
+    <!-- Map screen -->
+    <string name="legend_title">Legenda</string>
+    <string name="legend_caves">Grotte naturali</string>
+    <string name="legend_springs">Sorgenti carsiche</string>
+    <string name="legend_artificials">Cavità artificiali</string>
+    <string name="legend_horizontal">Orizzontale / poco profonda</string>
+    <string name="legend_descending">Discendente</string>
+    <string name="legend_ascending">Ascendente</string>
+    <string name="legend_water">Acqua (corsi d\'acqua / laghi)</string>
+    <string name="legend_resurgence">Risorgenza</string>
+    <string name="legend_sinkhole">Inghiottitoio</string>
+    <string name="legend_blow_cold">Soffiante — clima freddo</string>
+    <string name="legend_blow_warm">Soffiante — clima caldo</string>
+    <string name="legend_suck_cold">Aspirante — clima freddo</string>
+    <string name="legend_suck_warm">Aspirante — clima caldo</string>
+    <string name="legend_closed">Chiusa / accesso limitato</string>
+    <string name="legend_spring">Sorgente</string>
+    <string name="legend_resurgence_spring">Risorgenza / sorgente</string>
+    <string name="legend_absorbing">Assorbente</string>
+    <string name="legend_air_blow">Corrente soffiante</string>
+    <string name="legend_air_suction">Corrente aspirante</string>
+    <string name="map_tap_to_view">Tocca per i dettagli</string>
+    <string name="map_layers">Livelli</string>
+
+    <!-- Browse screen -->
+    <string name="screen_browse">Esplora</string>
+    <string name="search_hint">Cerca grotte…</string>
+    <string name="no_results">Nessun risultato</string>
+    <string name="browse_sync_hint">Sincronizza i dati dalle Impostazioni per iniziare</string>
+    <string name="items_count">%1$d elementi</string>
+
+    <!-- Detail screen -->
+    <string name="section_surveys">Rilievi</string>
+    <string name="btn_download_surveys">Scarica Rilievi</string>
+    <string name="btn_refresh_surveys">Aggiorna Rilievi</string>
+    <string name="surveys_fetching">Download rilievi in corso…</string>
+    <string name="surveys_none">Nessun rilievo disponibile per questa voce.</string>
+    <string name="survey_label_date">Data</string>
+    <string name="survey_label_author">Autore</string>
+    <string name="survey_label_surveyors">Rilevatori</string>
+    <string name="survey_label_groups">Gruppi</string>
+    <string name="survey_label_license">Licenza</string>
+    <string name="survey_label_bibliography">Fonte bibliografica</string>
+
+    <!-- Export screen -->
+    <string name="screen_export">Esporta</string>
+    <string name="section_available_data">Dati disponibili</string>
+    <string name="total_items">Totale: %1$d elementi</string>
+    <string name="export_format_title">Formato di esportazione</string>
+    <string name="export_format_kml_desc">Formato Google Earth. Ideale per visualizzare le grotte su un globo 3D.</string>
+    <string name="export_format_gpx_desc">Formato GPS Exchange. Importa in dispositivi GPS e app di escursionismo.</string>
+    <string name="export_format_json_desc">Esportazione completa — tutti i campi, tutti i record inclusi quelli senza coordinate. Usare per backup offline, condivisione o analisi dati.</string>
+    <string name="btn_export">Esporta %1$s</string>
+    <string name="btn_share">Condividi %1$s</string>
+    <string name="export_exporting">Esportazione…</string>
+    <string name="section_survey_data">Dati rilievi</string>
+    <string name="records_count">%1$d record</string>
+    <string name="survey_data_desc">Metadati dei rilievi (planimetrie, autori, date, licenze). Esportati separatamente in formato JSON.</string>
+    <string name="btn_export_surveys">Esporta Rilievi (JSON)</string>
+    <string name="btn_share_surveys">Condividi Rilievi</string>
+    <string name="section_import">Importa</string>
+    <string name="import_desc">Importa un file JSON esportato in precedenza. I record esistenti vengono aggiornati; i nuovi vengono aggiunti.</string>
+    <string name="btn_import_json">Importa da JSON</string>
+
+    <!-- Settings screen -->
+    <string name="screen_settings">Impostazioni</string>
+    <string name="settings_servers">Server</string>
+    <string name="btn_sync_all">Sincronizza tutti</string>
+    <string name="btn_add_server">Aggiungi server</string>
+    <string name="btn_sync">Sincronizza</string>
+    <string name="settings_server_url">URL del server</string>
+    <string name="settings_server_url_hint">https://il-tuo-server-openkis.it/</string>
+    <string name="settings_last_sync">Ultima sincronizzazione</string>
+    <string name="settings_never_synced">Mai</string>
+    <string name="settings_offline_mode">Modalità offline</string>
+    <string name="settings_offline_desc">Disabilita tutti gli accessi di rete. I dati già sincronizzati restano disponibili.</string>
+    <string name="settings_show_caves">Mostra grotte</string>
+    <string name="settings_show_springs">Mostra sorgenti</string>
+    <string name="settings_show_artificials">Mostra cavità artificiali</string>
+    <string name="settings_dev_sources">Sorgenti di sviluppo</string>
+    <string name="settings_dev_sources_desc">Abilita il server sperimentale (dev.catastogrotte-piemonte.net). Solo per test.</string>
+    <string name="settings_debug_log">Log di debug</string>
+    <string name="settings_debug_log_entries">%1$d voci</string>
+    <string name="settings_debug_log_empty">Il log è vuoto</string>
+    <string name="btn_export_log">Esporta log</string>
+    <string name="btn_clear_log">Cancella log</string>
+    <string name="settings_clear_cache">Cancella cache</string>
+    <string name="settings_clear_cache_desc">Rimuove tutti i dati delle grotte memorizzati localmente. Sarà necessaria una nuova sincronizzazione.</string>
+    <string name="settings_about">Informazioni</string>
+    <string name="settings_version">Versione %1$s</string>
+    <string name="about_desc">OpenKIS Android — visualizzatore speleologico open source.</string>
+    <string name="settings_locale">Lingua</string>
+    <string name="locale_system">Predefinita di sistema</string>
+    <string name="locale_en">Inglese</string>
+    <string name="locale_it">Italiano</string>
+    <string name="dialog_add_server_title">Aggiungi server</string>
+    <string name="dialog_server_url">URL del server</string>
+    <string name="dialog_server_name">Nome server (opzionale)</string>
+    <string name="dialog_remove_server_title">Rimuovi server</string>
+    <string name="dialog_remove_server_confirm">Rimuovere questo server e tutti i dati memorizzati localmente?</string>
+    <string name="settings_sync_types">Tipi da sincronizzare</string>
+    <string name="settings_server_visibility">Visibile sulla mappa</string>
+    <string name="synced_items">Sincronizzati %1$d elementi</string>
+    <string name="sync_in_progress">Sincronizzazione…</string>
+    <string name="sync_complete">Sincronizzazione completata: %1$d elementi</string>
+    <string name="sync_error">Sincronizzazione fallita: %1$s</string>
+
+    <!-- General -->
+    <string name="loading">Caricamento…</string>
+    <string name="retry">Riprova</string>
+    <string name="cancel">Annulla</string>
+    <string name="ok">OK</string>
+    <string name="save">Salva</string>
+    <string name="navigate_to">Naviga verso</string>
+    <string name="open_in_browser">Apri nel browser</string>
+    <string name="share">Condividi</string>
+    <string name="close">Chiudi</string>
+    <string name="add">Aggiungi</string>
+    <string name="remove">Rimuovi</string>
+    <string name="back">Indietro</string>
+    <string name="search">Cerca</string>
+</resources>

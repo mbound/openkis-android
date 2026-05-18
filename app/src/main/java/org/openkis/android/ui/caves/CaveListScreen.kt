@@ -30,9 +30,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import org.openkis.android.R
 import org.openkis.android.ui.theme.ArtificialMarker
 import org.openkis.android.ui.theme.CaveMarker
 import org.openkis.android.ui.theme.SpringMarker
@@ -51,7 +53,7 @@ fun CaveListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Browse") },
+                title = { Text(stringResource(R.string.screen_browse)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -71,8 +73,8 @@ fun CaveListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search caves...") },
-                leadingIcon = { Icon(Icons.Default.Search, "Search") },
+                placeholder = { Text(stringResource(R.string.search_hint)) },
+                leadingIcon = { Icon(Icons.Default.Search, stringResource(R.string.search)) },
                 singleLine = true
             )
 
@@ -87,7 +89,7 @@ fun CaveListScreen(
                     FilterChip(
                         selected = selectedType == type,
                         onClick = { viewModel.setSelectedType(type) },
-                        label = { Text(type.label) }
+                        label = { Text(stringResource(type.labelRes)) }
                     )
                 }
             }
@@ -96,7 +98,7 @@ fun CaveListScreen(
 
             // Results count
             Text(
-                text = "${items.size} items",
+                text = stringResource(R.string.items_count, items.size),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -112,12 +114,12 @@ fun CaveListScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "No results found",
+                        text = stringResource(R.string.no_results),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Sync data from Settings to get started",
+                        text = stringResource(R.string.browse_sync_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

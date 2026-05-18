@@ -1,5 +1,6 @@
 package org.openkis.android.ui.settings
 
+import android.app.Activity
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Visibility
@@ -31,6 +33,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,8 +58,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import org.openkis.android.R
 import org.openkis.android.data.local.entity.ServerEntity
 import org.openkis.android.data.repository.SyncManager
 import java.text.SimpleDateFormat
@@ -74,6 +79,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val showArtificials by viewModel.showArtificials.collectAsState()
     val devSourcesEnabled by viewModel.devSourcesEnabled.collectAsState()
     val debugEntries by viewModel.debugLogEntries.collectAsState()
+    val localeOverride by viewModel.localeOverride.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddServerDialog by remember { mutableStateOf(false) }
     var showLogDialog by remember { mutableStateOf(false) }
@@ -99,7 +105,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.screen_settings)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -116,6 +122,48 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Language
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Language,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_locale),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        data class LocaleOption(val code: String, val labelRes: Int)
+                        val options = listOf(
+                            LocaleOption("", R.string.locale_system),
+                            LocaleOption("en", R.string.locale_en),
+                            LocaleOption("it", R.string.locale_it)
+                        )
+                        options.forEach { option ->
+                            FilterChip(
+                                selected = localeOverride == option.code,
+                                onClick = {
+                                    if (localeOverride != option.code) {
+                                        viewModel.setLocale(option.code)
+                                        (context as? Activity)?.recreate()
+                                    }
+                                },
+                                label = { Text(stringResource(option.labelRes)) }
+                            )
+                        }
+                    }
+                }
+            }
+
             // Servers
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -135,18 +183,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                 modifier = Modifier.padding(end = 8.dp)
                             )
                             Text(
-                                text = "Servers",
+                                text = stringResource(R.string.settings_servers),
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
                         IconButton(onClick = { showAddServerDialog = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Server")
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.btn_add_server))
                         }
                     }
 
                     if (servers.isEmpty()) {
                         Text(
-                            text = "No servers configured",
+                            text = stringResource(R.string.settings_never_synced),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)
@@ -187,7 +235,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                 contentDescription = null,
                                 modifier = Modifier.padding(end = 8.dp)
                             )
-                            Text("Sync All")
+                            Text(stringResource(R.string.btn_sync_all))
                         }
                     }
                 }
@@ -207,11 +255,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Offline Mode",
+                            text = stringResource(R.string.settings_offline_mode),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "Use only cached data, no network requests",
+                            text = stringResource(R.string.settings_offline_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -237,29 +285,23 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Text(
-                            text = "Visible Data Types",
+                            text = stringResource(R.string.settings_sync_types),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Choose which types of data to display on the map and in the browse list",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     DataTypeToggle(
-                        label = "Natural Caves",
+                        label = stringResource(R.string.settings_show_caves),
                         checked = showCaves,
                         onCheckedChange = { viewModel.setShowCaves(it) }
                     )
                     DataTypeToggle(
-                        label = "Karst Springs",
+                        label = stringResource(R.string.settings_show_springs),
                         checked = showSprings,
                         onCheckedChange = { viewModel.setShowSprings(it) }
                     )
                     DataTypeToggle(
-                        label = "Artificial Cavities",
+                        label = stringResource(R.string.settings_show_artificials),
                         checked = showArtificials,
                         onCheckedChange = { viewModel.setShowArtificials(it) }
                     )
@@ -293,11 +335,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         )
                         Column {
                             Text(
-                                text = "Dev Data Sources",
+                                text = stringResource(R.string.settings_dev_sources),
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "Include the experimental dev server (dev.catastogrotte-piemonte.net). Data may be incomplete or unstable.",
+                                text = stringResource(R.string.settings_dev_sources_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -325,12 +367,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Text(
-                            text = "Debug Log",
+                            text = stringResource(R.string.settings_debug_log),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.weight(1f)
                         )
                         Text(
-                            text = "${debugEntries.size} entries",
+                            text = stringResource(R.string.settings_debug_log_entries, debugEntries.size),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -341,13 +383,13 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             onClick = { showLogDialog = true },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("View")
+                            Text(stringResource(R.string.settings_debug_log))
                         }
                         OutlinedButton(
                             onClick = { exportLogLauncher.launch("openkis-debug.txt") },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Export")
+                            Text(stringResource(R.string.btn_export_log))
                         }
                         OutlinedButton(
                             onClick = { viewModel.clearDebugLog() },
@@ -356,7 +398,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                 contentColor = MaterialTheme.colorScheme.error
                             )
                         ) {
-                            Text("Clear")
+                            Text(stringResource(R.string.btn_clear_log))
                         }
                     }
                 }
@@ -375,7 +417,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     contentDescription = null,
                     modifier = Modifier.padding(end = 8.dp)
                 )
-                Text("Clear Cache")
+                Text(stringResource(R.string.settings_clear_cache))
             }
 
             // About
@@ -385,7 +427,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "About",
+                        text = stringResource(R.string.settings_about),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -399,7 +441,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Version 1.3.1",
+                        text = stringResource(R.string.settings_version, "1.3.2"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -456,11 +498,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     if (showLogDialog) {
         AlertDialog(
             onDismissRequest = { showLogDialog = false },
-            title = { Text("Debug Log") },
+            title = { Text(stringResource(R.string.settings_debug_log)) },
             text = {
                 val scrollState = rememberScrollState()
                 val logText = if (debugEntries.isEmpty()) {
-                    "No log entries yet."
+                    stringResource(R.string.settings_debug_log_empty)
                 } else {
                     val fmt = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
                     debugEntries.joinToString("\n") { entry ->
@@ -475,7 +517,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 )
             },
             confirmButton = {
-                TextButton(onClick = { showLogDialog = false }) { Text("Close") }
+                TextButton(onClick = { showLogDialog = false }) { Text(stringResource(R.string.close)) }
             }
         )
     }
@@ -522,13 +564,11 @@ private fun ServerRow(
             )
             Text(
                 text = if (server.lastSync == 0L) {
-                    "Never synced"
+                    stringResource(R.string.settings_never_synced)
                 } else {
-                    val dateStr = SimpleDateFormat(
-                        "dd/MM/yyyy HH:mm",
-                        Locale.getDefault()
-                    ).format(Date(server.lastSync))
-                    "Last sync: $dateStr"
+                    val dateStr = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        .format(Date(server.lastSync))
+                    "${stringResource(R.string.settings_last_sync)}: $dateStr"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -538,13 +578,13 @@ private fun ServerRow(
             if (isSyncing) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
             } else {
-                Icon(Icons.Default.Sync, contentDescription = "Sync")
+                Icon(Icons.Default.Sync, contentDescription = stringResource(R.string.btn_sync))
             }
         }
         IconButton(onClick = { showDeleteConfirm = true }) {
             Icon(
                 Icons.Default.Delete,
-                contentDescription = "Remove",
+                contentDescription = stringResource(R.string.remove),
                 tint = MaterialTheme.colorScheme.error
             )
         }
@@ -560,7 +600,7 @@ private fun ServerRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Show on map and list",
+            text = stringResource(R.string.settings_server_visibility),
             style = MaterialTheme.typography.bodyMedium
         )
         Switch(
@@ -572,7 +612,7 @@ private fun ServerRow(
 
     // Sync type checkboxes
     Text(
-        text = "Sync data types:",
+        text = "${stringResource(R.string.settings_sync_types)}:",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
@@ -582,19 +622,19 @@ private fun ServerRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         SyncTypeCheckbox(
-            label = "Caves",
+            label = stringResource(R.string.type_caves),
             checked = server.syncCaves,
             onCheckedChange = { onSyncTypesChange(it, server.syncSprings, server.syncArtificials) },
             modifier = Modifier.weight(1f)
         )
         SyncTypeCheckbox(
-            label = "Springs",
+            label = stringResource(R.string.type_springs),
             checked = server.syncSprings,
             onCheckedChange = { onSyncTypesChange(server.syncCaves, it, server.syncArtificials) },
             modifier = Modifier.weight(1f)
         )
         SyncTypeCheckbox(
-            label = "Artificials",
+            label = stringResource(R.string.type_artificials),
             checked = server.syncArtificials,
             onCheckedChange = { onSyncTypesChange(server.syncCaves, server.syncSprings, it) },
             modifier = Modifier.weight(1f)
@@ -604,19 +644,19 @@ private fun ServerRow(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Remove Server") },
-            text = { Text("Remove \"${server.name}\" and all its synced data?") },
+            title = { Text(stringResource(R.string.dialog_remove_server_title)) },
+            text = { Text(stringResource(R.string.dialog_remove_server_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteConfirm = false
                 }) {
-                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -631,8 +671,7 @@ private fun SyncTypeCheckbox(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier
-            .clickable { onCheckedChange(!checked) },
+        modifier = modifier.clickable { onCheckedChange(!checked) },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
@@ -654,13 +693,13 @@ private fun AddServerDialog(onDismiss: () -> Unit, onAdd: (url: String, name: St
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Server") },
+        title = { Text(stringResource(R.string.dialog_add_server_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text("Server URL") },
+                    label = { Text(stringResource(R.string.dialog_server_url)) },
                     placeholder = { Text("https://example.com") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -668,8 +707,7 @@ private fun AddServerDialog(onDismiss: () -> Unit, onAdd: (url: String, name: St
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name (optional)") },
-                    placeholder = { Text("My Server") },
+                    label = { Text(stringResource(R.string.dialog_server_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -680,12 +718,12 @@ private fun AddServerDialog(onDismiss: () -> Unit, onAdd: (url: String, name: St
                 onClick = { onAdd(url, name) },
                 enabled = url.isNotBlank()
             ) {
-                Text("Add")
+                Text(stringResource(R.string.add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

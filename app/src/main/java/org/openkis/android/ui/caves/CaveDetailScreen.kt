@@ -41,10 +41,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import org.openkis.android.R
 import org.openkis.android.data.local.entity.SurveyEntity
+import org.openkis.android.ui.util.resolveFieldValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +69,7 @@ fun CaveDetailScreen(
                 title = { Text(detail?.title ?: code) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -77,26 +80,26 @@ fun CaveDetailScreen(
                                 setPackage("com.google.android.apps.maps")
                             })
                         }) {
-                            Icon(Icons.Default.Navigation, "Navigate")
+                            Icon(Icons.Default.Navigation, stringResource(R.string.navigate_to))
                         }
                     }
                     IconButton(onClick = {
                         detail?.let { d ->
                             val text = buildString {
                                 append("${d.title}\n")
-                                if (d.latitude != 0.0) append("Coordinates: ${d.latitude}, ${d.longitude}\n")
-                                d.fields.forEach { (label, value) ->
-                                    if (value.isNotBlank()) append("$label: $value\n")
+                                if (d.latitude != 0.0) append("${context.getString(R.string.label_coordinates)}: ${d.latitude}, ${d.longitude}\n")
+                                d.fields.forEach { (labelRes, value) ->
+                                    if (value.isNotBlank()) append("${context.getString(labelRes)}: $value\n")
                                 }
                             }
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 putExtra(Intent.EXTRA_TEXT, text)
                                 this.type = "text/plain"
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share"))
+                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.share)))
                         }
                     }) {
-                        Icon(Icons.Default.Share, "Share")
+                        Icon(Icons.Default.Share, stringResource(R.string.share))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -116,7 +119,7 @@ fun CaveDetailScreen(
                     .padding(32.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Loading...", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodyLarge)
             }
         } else {
             Column(
@@ -164,7 +167,7 @@ fun CaveDetailScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        highlights.forEach { (label, value) ->
+                        highlights.forEach { (labelRes, value) ->
                             Card(
                                 modifier = Modifier.weight(1f),
                                 colors = CardDefaults.cardColors(
@@ -173,7 +176,7 @@ fun CaveDetailScreen(
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Text(
-                                        text = label,
+                                        text = stringResource(labelRes),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
@@ -197,21 +200,24 @@ fun CaveDetailScreen(
                     elevation = CardDefaults.cardElevation(2.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        detail!!.fields.forEachIndexed { index, (label, value) ->
-                            if (value.isNotBlank()) {
-                                if (index > 0) {
+                        var firstVisible = true
+                        detail!!.fields.forEach { (labelRes, rawValue) ->
+                            val displayValue = resolveFieldValue(labelRes, rawValue)
+                            if (displayValue.isNotBlank()) {
+                                if (!firstVisible) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(vertical = 8.dp),
                                         color = MaterialTheme.colorScheme.outlineVariant
                                     )
                                 }
+                                firstVisible = false
                                 Text(
-                                    text = label,
+                                    text = stringResource(labelRes),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = value,
+                                    text = displayValue,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                             }
@@ -248,7 +254,7 @@ private fun SurveysSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Surveys",
+            text = stringResource(R.string.section_surveys),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -264,7 +270,7 @@ private fun SurveysSection(
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp)
                     )
-                    Text("Download Surveys")
+                    Text(stringResource(R.string.btn_download_surveys))
                 }
             }
 
@@ -281,7 +287,7 @@ private fun SurveysSection(
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp))
                         Text(
-                            "Fetching surveys…",
+                            stringResource(R.string.surveys_fetching),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -291,7 +297,7 @@ private fun SurveysSection(
             is SurveysState.Loaded -> {
                 if (state.surveys.isEmpty()) {
                     Text(
-                        "No surveys available for this entry.",
+                        stringResource(R.string.surveys_none),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -314,7 +320,7 @@ private fun SurveysSection(
                             contentDescription = null,
                             modifier = Modifier.padding(end = 8.dp)
                         )
-                        Text("Refresh Surveys")
+                        Text(stringResource(R.string.btn_refresh_surveys))
                     }
                 }
             }
@@ -330,7 +336,7 @@ private fun SurveysSection(
                         onClick = onDownload,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Retry")
+                        Text(stringResource(R.string.retry))
                     }
                 }
             }
@@ -367,25 +373,25 @@ private fun SurveyCard(survey: SurveyEntity, onImageClick: (String) -> Unit) {
             }
 
             val surveyFields = listOfNotNull(
-                survey.date.takeIf { it.isNotBlank() }?.let { "Date" to it },
-                survey.author.takeIf { it.isNotBlank() }?.let { "Author" to it },
-                survey.surveyors.takeIf { it.isNotBlank() }?.let { "Surveyors" to it },
-                survey.speleoGroups.takeIf { it.isNotBlank() }?.let { "Groups" to it },
-                survey.license.takeIf { it.isNotBlank() }?.let { "License" to it },
-                survey.bibliography.takeIf { it.isNotBlank() }?.let { "Bibliography" to it }
+                survey.date.takeIf { it.isNotBlank() }?.let { R.string.survey_label_date to it },
+                survey.author.takeIf { it.isNotBlank() }?.let { R.string.survey_label_author to it },
+                survey.surveyors.takeIf { it.isNotBlank() }?.let { R.string.survey_label_surveyors to it },
+                survey.speleoGroups.takeIf { it.isNotBlank() }?.let { R.string.survey_label_groups to it },
+                survey.license.takeIf { it.isNotBlank() }?.let { R.string.survey_label_license to it },
+                survey.bibliography.takeIf { it.isNotBlank() }?.let { R.string.survey_label_bibliography to it }
             )
 
-            surveyFields.forEachIndexed { i, (label, value) ->
+            surveyFields.forEachIndexed { i, (labelRes, value) ->
                 if (i > 0) HorizontalDivider(
                     modifier = Modifier.padding(vertical = 4.dp),
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
                 Text(
-                    text = label,
+                    text = stringResource(labelRes),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Text(text = value, style = MaterialTheme.typography.bodySmall)
+                Text(text = value, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

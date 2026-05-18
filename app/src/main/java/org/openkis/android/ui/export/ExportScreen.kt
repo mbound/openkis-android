@@ -40,8 +40,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import org.openkis.android.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -81,7 +83,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Export") },
+                title = { Text(stringResource(R.string.screen_export)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -105,17 +107,17 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Available Data",
+                        text = stringResource(R.string.section_available_data),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    DataRow("Natural Caves", uiState.caveCount)
-                    DataRow("Karst Springs", uiState.springCount)
-                    DataRow("Artificial Cavities", uiState.artificialCount)
+                    DataRow(stringResource(R.string.type_caves), uiState.caveCount)
+                    DataRow(stringResource(R.string.type_springs), uiState.springCount)
+                    DataRow(stringResource(R.string.type_artificials), uiState.artificialCount)
                     Spacer(modifier = Modifier.height(4.dp))
                     val total = uiState.caveCount + uiState.springCount + uiState.artificialCount
                     Text(
-                        text = "Total: $total items",
+                        text = stringResource(R.string.total_items, total),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -129,7 +131,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Export Format",
+                        text = stringResource(R.string.export_format_title),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -145,9 +147,9 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = when (uiState.selectedFormat) {
-                            ExportFormat.KML -> "Google Earth format. Best for viewing caves on a 3D globe."
-                            ExportFormat.GPX -> "GPS Exchange format. Import into GPS devices and hiking apps."
-                            ExportFormat.JSON -> "Full dataset export — all fields, all records including those without coordinates. Use for offline sharing, backup, or data analysis."
+                            ExportFormat.KML -> stringResource(R.string.export_format_kml_desc)
+                            ExportFormat.GPX -> stringResource(R.string.export_format_gpx_desc)
+                            ExportFormat.JSON -> stringResource(R.string.export_format_json_desc)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -174,14 +176,14 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.padding(end = 8.dp)
                     )
-                    Text("Exporting...")
+                    Text(stringResource(R.string.export_exporting))
                 } else {
                     Icon(
                         Icons.Default.FileDownload,
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp)
                     )
-                    Text("Export ${uiState.selectedFormat.label}")
+                    Text(stringResource(R.string.btn_export, uiState.selectedFormat.label))
                 }
             }
 
@@ -197,7 +199,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                     contentDescription = null,
                     modifier = Modifier.padding(end = 8.dp)
                 )
-                Text("Share ${uiState.selectedFormat.label}")
+                Text(stringResource(R.string.btn_share, uiState.selectedFormat.label))
             }
 
             // Survey export (separate section — only shown when surveys are cached)
@@ -217,18 +219,18 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Survey Data",
+                                text = stringResource(R.string.section_survey_data),
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "${uiState.surveyCount} records",
+                                text = stringResource(R.string.records_count, uiState.surveyCount),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Cached survey metadata (plan drawings, authors, dates, licenses). Exported separately from map data as JSON.",
+                            text = stringResource(R.string.survey_data_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -250,7 +252,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp)
                     )
-                    Text("Export Surveys (JSON)")
+                    Text(stringResource(R.string.btn_export_surveys))
                 }
 
                 OutlinedButton(
@@ -265,7 +267,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp)
                     )
-                    Text("Share Surveys")
+                    Text(stringResource(R.string.btn_share_surveys))
                 }
             }
 
@@ -281,12 +283,12 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Import",
+                        text = stringResource(R.string.section_import),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Import a previously exported JSON file. Existing records with matching codes will be updated; new records will be added.",
+                        text = stringResource(R.string.import_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -305,7 +307,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                     contentDescription = null,
                     modifier = Modifier.padding(end = 8.dp)
                 )
-                Text("Import from JSON")
+                Text(stringResource(R.string.btn_import_json))
             }
         }
     }

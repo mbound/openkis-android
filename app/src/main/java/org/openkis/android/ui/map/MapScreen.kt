@@ -55,7 +55,9 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import org.openkis.android.R
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import org.osmdroid.config.Configuration
@@ -370,9 +372,9 @@ fun MapScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     val compositor = viewModel.compositor
-                    LayerToggle("Caves", compositor, "caves", uiState.showCaves) { viewModel.toggleCaves() }
-                    LayerToggle("Springs", compositor, "springs", uiState.showSprings) { viewModel.toggleSprings() }
-                    LayerToggle("Artificials", compositor, "artificials", uiState.showArtificials) { viewModel.toggleArtificials() }
+                    LayerToggle(stringResource(R.string.legend_caves), compositor, "caves", uiState.showCaves) { viewModel.toggleCaves() }
+                    LayerToggle(stringResource(R.string.legend_springs), compositor, "springs", uiState.showSprings) { viewModel.toggleSprings() }
+                    LayerToggle(stringResource(R.string.legend_artificials), compositor, "artificials", uiState.showArtificials) { viewModel.toggleArtificials() }
                 }
             }
         }
@@ -399,48 +401,48 @@ fun MapScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Legend", style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.legend_title), style = MaterialTheme.typography.titleSmall)
                         IconButton(
                             onClick = { showLegend = false },
                             modifier = Modifier.size(24.dp)
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close), modifier = Modifier.size(16.dp))
                         }
                     }
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Natural Caves", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.legend_caves), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    LegendRow(compositor, "caves", listOf("caves", "hori"), "Horizontal / shallow")
-                    LegendRow(compositor, "caves", listOf("caves", "desc"), "Descending")
-                    LegendRow(compositor, "caves", listOf("caves", "asc"), "Ascending")
-                    LegendRow(compositor, "caves", listOf("caves", "water"), "Water (streams / lakes)")
-                    LegendRow(compositor, "caves", listOf("caves", "emitting"), "Resurgence")
-                    LegendRow(compositor, "caves", listOf("caves", "absorbent"), "Sinkhole")
-                    LegendRow(compositor, "caves", listOf("caves", "blow_during_cold"), "Air blow — cold weather")
-                    LegendRow(compositor, "caves", listOf("caves", "blow_during_heat"), "Air blow — warm weather")
-                    LegendRow(compositor, "caves", listOf("caves", "suck_during_cold"), "Air suction — cold weather")
-                    LegendRow(compositor, "caves", listOf("caves", "suck_during_heat"), "Air suction — warm weather")
-                    LegendRow(compositor, "caves", listOf("caves", "closed"), "Closed / restricted access")
+                    LegendRow(compositor, "caves", listOf("caves", "hori"), stringResource(R.string.legend_horizontal))
+                    LegendRow(compositor, "caves", listOf("caves", "desc"), stringResource(R.string.legend_descending))
+                    LegendRow(compositor, "caves", listOf("caves", "asc"), stringResource(R.string.legend_ascending))
+                    LegendRow(compositor, "caves", listOf("caves", "water"), stringResource(R.string.legend_water))
+                    LegendRow(compositor, "caves", listOf("caves", "emitting"), stringResource(R.string.legend_resurgence))
+                    LegendRow(compositor, "caves", listOf("caves", "absorbent"), stringResource(R.string.legend_sinkhole))
+                    LegendRow(compositor, "caves", listOf("caves", "blow_during_cold"), stringResource(R.string.legend_blow_cold))
+                    LegendRow(compositor, "caves", listOf("caves", "blow_during_heat"), stringResource(R.string.legend_blow_warm))
+                    LegendRow(compositor, "caves", listOf("caves", "suck_during_cold"), stringResource(R.string.legend_suck_cold))
+                    LegendRow(compositor, "caves", listOf("caves", "suck_during_heat"), stringResource(R.string.legend_suck_warm))
+                    LegendRow(compositor, "caves", listOf("caves", "closed"), stringResource(R.string.legend_closed))
 
                     Spacer(Modifier.height(12.dp))
-                    Text("Karst Springs", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.legend_springs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    LegendRow(compositor, "springs", listOf("springs"), "Spring")
-                    LegendRow(compositor, "springs", listOf("springs", "emitting"), "Emitting")
-                    LegendRow(compositor, "springs", listOf("springs", "absorbent"), "Absorbing")
-                    LegendRow(compositor, "springs", listOf("springs", "blow"), "Air blow")
-                    LegendRow(compositor, "springs", listOf("springs", "suck"), "Air suction")
+                    LegendRow(compositor, "springs", listOf("springs"), stringResource(R.string.legend_spring))
+                    LegendRow(compositor, "springs", listOf("springs", "emitting"), stringResource(R.string.legend_resurgence))
+                    LegendRow(compositor, "springs", listOf("springs", "absorbent"), stringResource(R.string.legend_absorbing))
+                    LegendRow(compositor, "springs", listOf("springs", "blow"), stringResource(R.string.legend_air_blow))
+                    LegendRow(compositor, "springs", listOf("springs", "suck"), stringResource(R.string.legend_air_suction))
 
                     Spacer(Modifier.height(12.dp))
-                    Text("Artificial Cavities", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.legend_artificials), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    LegendRow(compositor, "artificials", listOf("artificials", "hori"), "Horizontal / shallow")
-                    LegendRow(compositor, "artificials", listOf("artificials", "desc"), "Descending")
-                    LegendRow(compositor, "artificials", listOf("artificials", "asc"), "Ascending")
-                    LegendRow(compositor, "artificials", listOf("artificials", "emitting"), "Resurgence / spring")
-                    LegendRow(compositor, "artificials", listOf("artificials", "absorbent"), "Absorbing")
-                    LegendRow(compositor, "artificials", listOf("artificials", "closed"), "Closed / restricted access")
+                    LegendRow(compositor, "artificials", listOf("artificials", "hori"), stringResource(R.string.legend_horizontal))
+                    LegendRow(compositor, "artificials", listOf("artificials", "desc"), stringResource(R.string.legend_descending))
+                    LegendRow(compositor, "artificials", listOf("artificials", "asc"), stringResource(R.string.legend_ascending))
+                    LegendRow(compositor, "artificials", listOf("artificials", "emitting"), stringResource(R.string.legend_resurgence_spring))
+                    LegendRow(compositor, "artificials", listOf("artificials", "absorbent"), stringResource(R.string.legend_absorbing))
+                    LegendRow(compositor, "artificials", listOf("artificials", "closed"), stringResource(R.string.legend_closed))
                 }
             }
         }
@@ -474,7 +476,7 @@ fun MapScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "Tap to view details",
+                                text = stringResource(R.string.map_tap_to_view),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -487,7 +489,7 @@ fun MapScreen(
                         ) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Close",
+                                contentDescription = stringResource(R.string.close),
                                 modifier = Modifier.size(18.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )

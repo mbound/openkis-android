@@ -1,5 +1,6 @@
 package org.openkis.android.ui.caves
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import org.openkis.android.R
 import org.openkis.android.data.local.entity.ArtificialEntity
 import org.openkis.android.data.local.entity.CaveEntity
 import org.openkis.android.data.local.entity.SpringEntity
@@ -18,10 +20,10 @@ import org.openkis.android.data.repository.CaveRepository
 import org.openkis.android.data.repository.SyncManager
 import javax.inject.Inject
 
-enum class ItemType(val label: String) {
-    CAVES("Caves"),
-    SPRINGS("Springs"),
-    ARTIFICIALS("Artificials")
+enum class ItemType(@StringRes val labelRes: Int) {
+    CAVES(R.string.type_caves),
+    SPRINGS(R.string.type_springs),
+    ARTIFICIALS(R.string.type_artificials)
 }
 
 data class CaveListItem(

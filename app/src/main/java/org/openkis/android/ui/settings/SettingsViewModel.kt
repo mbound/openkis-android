@@ -1,14 +1,17 @@
 package org.openkis.android.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.openkis.android.LocaleHelper
 import org.openkis.android.data.debug.DebugLogger
 import org.openkis.android.data.debug.LogEntry
 import org.openkis.android.data.local.entity.ServerEntity
@@ -25,11 +28,20 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val syncManager: SyncManager,
-    private val debugLogger: DebugLogger
+    private val debugLogger: DebugLogger,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    private val _localeOverride = MutableStateFlow(LocaleHelper.getLocale(context))
+    val localeOverride: StateFlow<String> = _localeOverride.asStateFlow()
+
+    fun setLocale(locale: String) {
+        LocaleHelper.setLocale(context, locale)
+        _localeOverride.value = locale
+    }
 
     val servers: StateFlow<List<ServerEntity>> = syncManager.servers
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
