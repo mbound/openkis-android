@@ -168,6 +168,17 @@ class CaveRepository @Inject constructor(
         return entities
     }
 
+    suspend fun clearSurveysForEntity(serverUrl: String, entityType: String, dbId: String) {
+        surveyDao.deleteByEntity(serverUrl, entityType, dbId)
+        val host = Uri.parse(serverUrl).host?.replace(".", "_") ?: "server"
+        File(context.filesDir, "surveys/$host/$entityType/$dbId").deleteRecursively()
+    }
+
+    suspend fun clearSurveys() {
+        surveyDao.deleteAll()
+        File(context.filesDir, "surveys").deleteRecursively()
+    }
+
     fun getAllSurveys(): Flow<List<SurveyEntity>> = surveyDao.getAll()
 
     suspend fun getSurveyCount(): Int = surveyDao.count()

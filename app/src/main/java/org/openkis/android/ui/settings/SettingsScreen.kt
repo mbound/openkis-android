@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Science
@@ -402,6 +403,22 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         }
                     }
                 }
+            }
+
+            // Clear survey data only (keeps caves/springs/artificials)
+            OutlinedButton(
+                onClick = { viewModel.clearSurveys() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Icon(
+                    Icons.Default.ImageSearch,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(stringResource(R.string.btn_clear_surveys))
             }
 
             // Clear cache

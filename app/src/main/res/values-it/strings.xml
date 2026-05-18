@@ -149,6 +149,8 @@
     <string name="section_surveys">Rilievi</string>
     <string name="btn_download_surveys">Scarica Rilievi</string>
     <string name="btn_refresh_surveys">Aggiorna Rilievi</string>
+    <string name="btn_clear_surveys">Elimina Dati Rilievi</string>
+    <string name="surveys_cleared">Dati rilievi eliminati</string>
     <string name="surveys_fetching">Download rilievi in corso…</string>
     <string name="surveys_none">Nessun rilievo disponibile per questa voce.</string>
     <string name="survey_label_date">Data</string>

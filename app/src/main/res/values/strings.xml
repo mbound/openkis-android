@@ -151,6 +151,8 @@
     <string name="section_surveys">Surveys</string>
     <string name="btn_download_surveys">Download Surveys</string>
     <string name="btn_refresh_surveys">Refresh Surveys</string>
+    <string name="btn_clear_surveys">Clear Survey Data</string>
+    <string name="surveys_cleared">Survey data cleared</string>
     <string name="surveys_fetching">Fetching surveys…</string>
     <string name="surveys_none">No surveys available for this entry.</string>
     <string name="survey_label_date">Date</string>

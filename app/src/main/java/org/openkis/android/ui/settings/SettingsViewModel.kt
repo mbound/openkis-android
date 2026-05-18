@@ -140,6 +140,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { syncManager.updateServerSyncTypes(url, caves, springs, artificials) }
     }
 
+    fun clearSurveys() {
+        viewModelScope.launch {
+            syncManager.clearSurveys()
+            _uiState.value = _uiState.value.copy(syncMessage = "Survey data cleared")
+        }
+    }
+
     fun clearCache() {
         viewModelScope.launch {
             syncManager.clearCache()

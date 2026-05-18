@@ -18,9 +18,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -238,7 +240,8 @@ fun CaveDetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     SurveysSection(
                         state = surveysState,
-                        onDownload = { viewModel.downloadSurveys() }
+                        onDownload = { viewModel.downloadSurveys() },
+                        onClear = { viewModel.clearSurveys() }
                     )
                 }
 
@@ -251,7 +254,8 @@ fun CaveDetailScreen(
 @Composable
 private fun SurveysSection(
     state: SurveysState,
-    onDownload: () -> Unit
+    onDownload: () -> Unit,
+    onClear: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -323,6 +327,20 @@ private fun SurveysSection(
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Text(stringResource(R.string.btn_refresh_surveys))
+                    }
+                    OutlinedButton(
+                        onClick = onClear,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(stringResource(R.string.btn_clear_surveys))
                     }
                 }
             }

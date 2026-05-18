@@ -85,6 +85,14 @@ class CaveDetailViewModel @Inject constructor(
         }
     }
 
+    fun clearSurveys() {
+        val d = _detail.value ?: return
+        viewModelScope.launch {
+            repository.clearSurveysForEntity(d.serverUrl, d.entityType, d.dbId)
+            _surveysState.value = SurveysState.Idle
+        }
+    }
+
     private suspend fun loadCave(code: String): DetailData? {
         val cave = repository.getCaveByCode(code) ?: return null
         return DetailData(

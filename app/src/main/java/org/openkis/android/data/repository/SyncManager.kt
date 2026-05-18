@@ -198,6 +198,10 @@ class SyncManager @Inject constructor(
         serverDao.updateSyncTypes(url, caves, springs, artificials)
     }
 
+    suspend fun clearSurveys() {
+        repository.clearSurveys()
+    }
+
     suspend fun clearCache() {
         repository.clearAll()
         serverDao.getAll().first().forEach {
