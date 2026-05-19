@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2026-05-18
+
+### Added
+- Pinch-to-zoom (1×–8×) and pan in the fullscreen survey image viewer
+- Double-tap anywhere on a zoomed image to reset to fit-screen; a hint label appears in the top bar while zoomed
+- Share button in the viewer bottom bar — opens Android share sheet so the image can be sent via any app
+- Save to Gallery button — writes the image to Pictures/OpenKIS; uses MediaStore on API 29+, legacy external storage on API 26–28
+
 ## [1.3.4] - 2026-05-18
 
 ### Added

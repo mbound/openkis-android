@@ -153,6 +153,10 @@
     <string name="btn_refresh_surveys">Refresh Surveys</string>
     <string name="btn_clear_surveys">Clear Survey Data</string>
     <string name="surveys_cleared">Survey data cleared</string>
+    <string name="viewer_save">Save to Gallery</string>
+    <string name="viewer_saved">Image saved to gallery</string>
+    <string name="viewer_save_failed">Could not save image</string>
+    <string name="viewer_double_tap_reset">Double-tap to reset zoom</string>
     <string name="surveys_fetching">Fetching surveys…</string>
     <string name="surveys_none">No surveys available for this entry.</string>
     <string name="survey_label_date">Date</string>

@@ -151,6 +151,10 @@
     <string name="btn_refresh_surveys">Aggiorna Rilievi</string>
     <string name="btn_clear_surveys">Elimina Dati Rilievi</string>
     <string name="surveys_cleared">Dati rilievi eliminati</string>
+    <string name="viewer_save">Salva nella Galleria</string>
+    <string name="viewer_saved">Immagine salvata nella galleria</string>
+    <string name="viewer_save_failed">Impossibile salvare l\'immagine</string>
+    <string name="viewer_double_tap_reset">Doppio tocco per reimpostare lo zoom</string>
     <string name="surveys_fetching">Download rilievi in corso…</string>
     <string name="surveys_none">Nessun rilievo disponibile per questa voce.</string>
     <string name="survey_label_date">Data</string>
