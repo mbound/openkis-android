@@ -21,13 +21,13 @@ OpenKIS Android connects to your OpenKIS server, syncs cave data for offline use
 
 <table>
   <tr>
-    <td align="center"><img src="screenshots/screen_1.jpeg" width="220"/><br/><sub>Interactive map</sub></td>
-    <td align="center"><img src="screenshots/screen_2.jpeg" width="220"/><br/><sub>Map legend &amp; layer types</sub></td>
+    <td align="center"><img src="screenshots/screen_1.jpeg" width="220"/><br/><sub>Interactive map &amp; legend</sub></td>
     <td align="center"><img src="screenshots/screen_3.jpeg" width="220"/><br/><sub>Search function &amp; browse</sub></td>
+    <td align="center"><img src="screenshots/screen_6.jpeg" width="220"/><br/><sub>Cave details view</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/screen_6.jpeg" width="220"/><br/><sub>Cave detail view</sub></td>
-    <td align="center"><img src="screenshots/screen_10.jpeg" width="220"/><br/><sub>Cave surveys</sub></td>
+    <td align="center"><img src="screenshots/screen_10.jpeg" width="220"/><br/><sub>Cave surveys and maps</sub></td>
+    <td align="center"><img src="screenshots/screen_8.jpeg" width="220"/><br/><sub>Export functions</sub></td>
     <td align="center"><img src="screenshots/screen_4.jpeg" width="220"/><br/><sub>Settings &amp; server config</sub></td>
   </tr>
 </table>
