@@ -21,7 +21,7 @@ OpenKIS Android connects to your OpenKIS server, syncs cave data for offline use
 
 <table>
   <tr>
-    <td align="center"><img src="screenshots/screen_1.jpeg" width="220"/><br/><sub>Interactive map &amp; legend</sub></td>
+    <td align="center"><img src="screenshots/screen_2.jpeg" width="220"/><br/><sub>Interactive map &amp; legend</sub></td>
     <td align="center"><img src="screenshots/screen_3.jpeg" width="220"/><br/><sub>Search function &amp; browse</sub></td>
     <td align="center"><img src="screenshots/screen_6.jpeg" width="220"/><br/><sub>Cave details view</sub></td>
   </tr>
