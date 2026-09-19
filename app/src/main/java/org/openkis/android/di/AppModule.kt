@@ -17,6 +17,7 @@ import org.openkis.android.data.local.dao.CaveDao
 import org.openkis.android.data.local.dao.ServerDao
 import org.openkis.android.data.local.dao.SpringDao
 import org.openkis.android.data.local.dao.SurveyDao
+import org.openkis.android.data.local.dao.SurveyAnnotationDao
 import org.openkis.android.data.remote.DynamicBaseUrlInterceptor
 import org.openkis.android.data.remote.OpenKisApi
 import retrofit2.Retrofit
@@ -35,7 +36,10 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "openkis.db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(AppDatabase.MIGRATION_6_7)
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
@@ -52,6 +56,9 @@ object AppModule {
 
     @Provides
     fun provideSurveyDao(db: AppDatabase): SurveyDao = db.surveyDao()
+
+    @Provides
+    fun provideSurveyAnnotationDao(db: AppDatabase): SurveyAnnotationDao = db.surveyAnnotationDao()
 
     @Provides
     @Singleton

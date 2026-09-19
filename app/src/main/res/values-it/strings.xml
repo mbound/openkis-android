@@ -164,6 +164,29 @@
     <string name="survey_label_license">Licenza</string>
     <string name="survey_label_bibliography">Fonte bibliografica</string>
 
+    <!-- Annotazioni rilievi -->
+    <string name="viewer_annotate">Annota</string>
+    <string name="viewer_annotation_hint">Modalità annotazione: tocca il rilievo per inserire un marcatore. Tocca un marcatore esistente per modificarlo.</string>
+    <string name="annotation_marker_count">%1$d marcatori</string>
+    <string name="annotation_new_title">Nuovo marcatore</string>
+    <string name="annotation_edit_title">Modifica marcatore</string>
+    <string name="annotation_position">Posizione immagine: %1$d%%, %2$d%%</string>
+    <string name="annotation_label_id">ID marcatore</string>
+    <string name="annotation_label_title">Nome</string>
+    <string name="annotation_label_category">Categoria</string>
+    <string name="annotation_category_hint">es. termometro, logger, caratteristica, correzione, esplorazione</string>
+    <string name="annotation_label_notes">Note</string>
+    <string name="annotation_label_metadata">Metadati</string>
+    <string name="annotation_metadata_hint">Seriale sensore, data installazione, calibrazione, proprietario, stato o altri dettagli chiave/valore</string>
+    <string name="annotation_export_png">PNG</string>
+    <string name="annotation_export_pdf">PDF</string>
+    <string name="annotation_export_saved">Mappa annotata esportata</string>
+    <string name="annotation_export_failed">Impossibile esportare la mappa annotata</string>
+    <string name="section_survey_annotations">Annotazioni rilievi</string>
+    <string name="annotation_data_desc">Metadati locali dei marcatori, mantenuti separati dai dati del rilievo remoto ed esportabili in CSV.</string>
+    <string name="btn_export_annotations_csv">Esporta annotazioni (CSV)</string>
+    <string name="btn_share_annotations_csv">Condividi CSV annotazioni</string>
+
     <!-- Export screen -->
     <string name="screen_export">Esporta</string>
     <string name="section_available_data">Dati disponibili</string>

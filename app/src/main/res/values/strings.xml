@@ -166,6 +166,29 @@
     <string name="survey_label_license">License</string>
     <string name="survey_label_bibliography">Bibliography</string>
 
+    <!-- Survey annotations -->
+    <string name="viewer_annotate">Annotate</string>
+    <string name="viewer_annotation_hint">Annotation mode: tap the survey image to place a marker. Tap an existing marker to edit it.</string>
+    <string name="annotation_marker_count">%1$d markers</string>
+    <string name="annotation_new_title">New marker</string>
+    <string name="annotation_edit_title">Edit marker</string>
+    <string name="annotation_position">Image position: %1$d%%, %2$d%%</string>
+    <string name="annotation_label_id">Marker ID</string>
+    <string name="annotation_label_title">Name</string>
+    <string name="annotation_label_category">Category</string>
+    <string name="annotation_category_hint">e.g. thermometer, logger, feature, correction, exploration</string>
+    <string name="annotation_label_notes">Notes</string>
+    <string name="annotation_label_metadata">Metadata</string>
+    <string name="annotation_metadata_hint">Sensor serial, installation date, calibration, owner, status, or other key/value details</string>
+    <string name="annotation_export_png">PNG</string>
+    <string name="annotation_export_pdf">PDF</string>
+    <string name="annotation_export_saved">Annotated map exported</string>
+    <string name="annotation_export_failed">Could not export annotated map</string>
+    <string name="section_survey_annotations">Survey Annotations</string>
+    <string name="annotation_data_desc">Local marker overlay metadata. Kept separately from remotely retrieved survey data and exportable as CSV.</string>
+    <string name="btn_export_annotations_csv">Export Annotations (CSV)</string>
+    <string name="btn_share_annotations_csv">Share Annotations CSV</string>
+
     <!-- Export screen -->
     <string name="screen_export">Export</string>
     <string name="section_available_data">Available Data</string>

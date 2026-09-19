@@ -67,6 +67,12 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
         uri?.let { viewModel.exportSurveys(context, it) }
     }
 
+    val createAnnotationCsvLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        uri?.let { viewModel.exportAnnotationsCsv(context, it) }
+    }
+
     val importFileLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -268,6 +274,74 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(stringResource(R.string.btn_share_surveys))
+                }
+            }
+
+            if (uiState.annotationCount > 0) {
+                HorizontalDivider()
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(2.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.section_survey_annotations),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.records_count, uiState.annotationCount),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.annotation_data_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        val date = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+                        createAnnotationCsvLauncher.launch("openkis_annotations_" + date + ".csv")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !uiState.isExporting
+                ) {
+                    Icon(
+                        Icons.Default.FileDownload,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(stringResource(R.string.btn_export_annotations_csv))
+                }
+
+                OutlinedButton(
+                    onClick = { viewModel.shareAnnotationsCsv(context) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !uiState.isExporting
+                ) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(stringResource(R.string.btn_share_annotations_csv))
                 }
             }
 
