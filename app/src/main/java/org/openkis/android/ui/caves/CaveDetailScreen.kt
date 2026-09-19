@@ -76,6 +76,7 @@ import org.openkis.android.R
 import org.openkis.android.data.local.entity.SurveyEntity
 import java.io.File
 import org.openkis.android.ui.util.resolveFieldValue
+import org.openkis.android.ui.surveys.AnnotatedSurveyImageViewer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -388,9 +389,9 @@ private fun SurveyCard(survey: SurveyEntity) {
     var showFullscreen by remember { mutableStateOf(false) }
 
     if (showFullscreen && survey.localImagePath.isNotBlank()) {
-        SurveyImageViewer(
+        AnnotatedSurveyImageViewer(
+            survey = survey,
             file = File(survey.localImagePath),
-            title = survey.title,
             onDismiss = { showFullscreen = false }
         )
     }
