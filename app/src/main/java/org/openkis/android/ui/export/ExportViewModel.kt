@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -64,6 +65,11 @@ class ExportViewModel @Inject constructor(
                 surveyCount = repository.getSurveyCount(),
                 annotationCount = repository.getSurveyAnnotationCount()
             )
+        }
+        viewModelScope.launch {
+            repository.getAllSurveyAnnotations().collect { annotations ->
+                _uiState.value = _uiState.value.copy(annotationCount = annotations.size)
+            }
         }
     }
 
