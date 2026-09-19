@@ -207,6 +207,7 @@ fun AnnotatedSurveyImageViewer(
                                 entityType = survey.entityType,
                                 dbId = survey.dbId,
                                 surveyKey = survey.annotationKey(),
+                                surveyTitle = survey.title,
                                 markerId = "M-" + uuid.toString().take(6).uppercase(),
                                 normalizedX = nx,
                                 normalizedY = ny,
