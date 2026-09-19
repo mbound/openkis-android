@@ -48,6 +48,7 @@ abstract class AppDatabase : RoomDatabase() {
                         `entityType` TEXT NOT NULL,
                         `dbId` TEXT NOT NULL,
                         `surveyKey` TEXT NOT NULL,
+                        `surveyTitle` TEXT NOT NULL,
                         `markerId` TEXT NOT NULL,
                         `normalizedX` REAL NOT NULL,
                         `normalizedY` REAL NOT NULL,
