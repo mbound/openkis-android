@@ -8,10 +8,12 @@ import org.openkis.android.data.local.dao.ArtificialDao
 import org.openkis.android.data.local.dao.CaveDao
 import org.openkis.android.data.local.dao.SpringDao
 import org.openkis.android.data.local.dao.SurveyDao
+import org.openkis.android.data.local.dao.SurveyAnnotationDao
 import org.openkis.android.data.local.entity.ArtificialEntity
 import org.openkis.android.data.local.entity.CaveEntity
 import org.openkis.android.data.local.entity.SpringEntity
 import org.openkis.android.data.local.entity.SurveyEntity
+import org.openkis.android.data.local.entity.SurveyAnnotationEntity
 import org.openkis.android.data.remote.CsvParser
 import org.openkis.android.data.remote.DevSiteApi
 import org.openkis.android.data.remote.OpenKisApi
@@ -29,6 +31,7 @@ class CaveRepository @Inject constructor(
     private val api: OpenKisApi,
     private val devSiteApi: DevSiteApi,
     private val surveyDao: SurveyDao,
+    private val surveyAnnotationDao: SurveyAnnotationDao,
     private val surveyFetcher: SurveyFetcher,
     @ApplicationContext private val context: Context
 ) {
@@ -182,6 +185,10 @@ class CaveRepository @Inject constructor(
     fun getAllSurveys(): Flow<List<SurveyEntity>> = surveyDao.getAll()
 
     suspend fun getSurveyCount(): Int = surveyDao.count()
+
+    fun getAllSurveyAnnotations(): Flow<List<SurveyAnnotationEntity>> = surveyAnnotationDao.getAll()
+
+    suspend fun getSurveyAnnotationCount(): Int = surveyAnnotationDao.count()
 }
 
 // Parses a decimal-degree coordinate string; returns 0.0 if the value is outside
