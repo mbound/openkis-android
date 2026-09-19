@@ -133,11 +133,11 @@ class SurveyAnnotationExporter @Inject constructor() {
         annotations.forEachIndexed { index, annotation ->
             val x = annotation.normalizedX.coerceIn(0f, 1f) * bitmap.width
             val y = annotation.normalizedY.coerceIn(0f, 1f) * bitmap.height
-            val markerId = annotation.markerId.ifBlank { "M\${index + 1}" }
+            val markerId = annotation.markerId.ifBlank { "M" + (index + 1) }
             val label = if (annotation.title.isBlank()) {
                 markerId
             } else {
-                "\$markerId - \${annotation.title}"
+                markerId + " - " + annotation.title
             }
 
             canvas.drawCircle(x, y, radius, markerPaint)
