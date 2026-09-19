@@ -28,6 +28,12 @@ interface SurveyAnnotationDao {
         surveyKey: String
     ): Flow<List<SurveyAnnotationEntity>>
 
+    @Query("SELECT * FROM survey_annotations ORDER BY updatedAt DESC")
+    fun getAll(): Flow<List<SurveyAnnotationEntity>>
+
+    @Query("SELECT COUNT(*) FROM survey_annotations")
+    suspend fun count(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(annotation: SurveyAnnotationEntity)
 
