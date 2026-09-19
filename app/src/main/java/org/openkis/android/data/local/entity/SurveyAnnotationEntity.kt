@@ -16,6 +16,7 @@ data class SurveyAnnotationEntity(
     val entityType: String,
     val dbId: String,
     val surveyKey: String,
+    val surveyTitle: String,
     val markerId: String,
     val normalizedX: Float,
     val normalizedY: Float,
