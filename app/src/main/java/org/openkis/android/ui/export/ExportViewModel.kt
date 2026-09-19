@@ -19,6 +19,7 @@ import org.openkis.android.data.export.JsonExporter
 import org.openkis.android.data.export.JsonImporter
 import org.openkis.android.data.export.KmlExporter
 import org.openkis.android.data.export.SurveyExporter
+import org.openkis.android.data.export.SurveyAnnotationExporter
 import org.openkis.android.data.repository.CaveRepository
 import java.io.File
 import javax.inject.Inject
@@ -35,6 +36,7 @@ data class ExportUiState(
     val springCount: Int = 0,
     val artificialCount: Int = 0,
     val surveyCount: Int = 0,
+    val annotationCount: Int = 0,
     val isExporting: Boolean = false,
     val message: String? = null
 )
@@ -46,6 +48,7 @@ class ExportViewModel @Inject constructor(
     private val gpxExporter: GpxExporter,
     private val jsonExporter: JsonExporter,
     private val surveyExporter: SurveyExporter,
+    private val surveyAnnotationExporter: SurveyAnnotationExporter,
     private val jsonImporter: JsonImporter
 ) : ViewModel() {
 
@@ -58,7 +61,8 @@ class ExportViewModel @Inject constructor(
                 caveCount = repository.getCaveCount(),
                 springCount = repository.getSpringCount(),
                 artificialCount = repository.getArtificialCount(),
-                surveyCount = repository.getSurveyCount()
+                surveyCount = repository.getSurveyCount(),
+                annotationCount = repository.getSurveyAnnotationCount()
             )
         }
     }
@@ -192,6 +196,64 @@ class ExportViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
                     message = "Survey export failed: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun exportAnnotationsCsv(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, message = null)
+            try {
+                val annotations = repository.getAllSurveyAnnotations().first()
+                context.contentResolver.openOutputStream(uri)?.use { output ->
+                    surveyAnnotationExporter.exportCsv(output, annotations)
+                } ?: throw Exception("Could not open destination")
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    annotationCount = annotations.size,
+                    message = "Exported " + annotations.size + " annotations"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Annotation export failed: " + e.message
+                )
+            }
+        }
+    }
+
+    fun shareAnnotationsCsv(context: Context) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, message = null)
+            try {
+                val annotations = repository.getAllSurveyAnnotations().first()
+                val file = withContext(Dispatchers.IO) {
+                    val dir = File(context.cacheDir, "exports").also { it.mkdirs() }
+                    val f = File(dir, "openkis_survey_annotations.csv")
+                    f.outputStream().use { out ->
+                        surveyAnnotationExporter.exportCsv(out, annotations)
+                    }
+                    f
+                }
+                val uri = FileProvider.getUriForFile(
+                    context, context.packageName + ".fileprovider", file
+                )
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(intent, "Share survey annotations"))
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    annotationCount = annotations.size,
+                    message = "Ready to share " + annotations.size + " annotations"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    message = "Annotation export failed: " + e.message
                 )
             }
         }
