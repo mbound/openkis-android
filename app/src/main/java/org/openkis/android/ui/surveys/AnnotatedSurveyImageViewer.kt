@@ -86,33 +86,43 @@ fun AnnotatedSurveyImageViewer(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val annotations by viewModel.observe(survey).collectAsState(initial = emptyList())
+    val annotationFlow = remember(
+        survey.serverUrl,
+        survey.entityType,
+        survey.dbId,
+        survey.imageUrl,
+        survey.thumbnailUrl,
+        survey.surveyIndex
+    ) { viewModel.observe(survey) }
+    val annotations by annotationFlow.collectAsState(initial = emptyList())
 
     val pngLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("image/png")
     ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        scope.launch {
-            val ok = viewModel.exportAnnotatedPng(context, uri, file, annotations)
-            Toast.makeText(
-                context,
-                context.getString(if (ok) R.string.annotation_export_saved else R.string.annotation_export_failed),
-                Toast.LENGTH_SHORT
-            ).show()
+        if (uri != null) {
+            scope.launch {
+                val ok = viewModel.exportAnnotatedPng(context, uri, file, annotations)
+                Toast.makeText(
+                    context,
+                    context.getString(if (ok) R.string.annotation_export_saved else R.string.annotation_export_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
     val pdfLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        scope.launch {
-            val ok = viewModel.exportAnnotatedPdf(context, uri, file, annotations)
-            Toast.makeText(
-                context,
-                context.getString(if (ok) R.string.annotation_export_saved else R.string.annotation_export_failed),
-                Toast.LENGTH_SHORT
-            ).show()
+        if (uri != null) {
+            scope.launch {
+                val ok = viewModel.exportAnnotatedPdf(context, uri, file, annotations)
+                Toast.makeText(
+                    context,
+                    context.getString(if (ok) R.string.annotation_export_saved else R.string.annotation_export_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
