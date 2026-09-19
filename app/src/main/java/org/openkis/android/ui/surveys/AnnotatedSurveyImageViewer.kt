@@ -7,6 +7,8 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +40,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -77,13 +81,41 @@ import kotlin.math.roundToInt
 fun AnnotatedSurveyImageViewer(
     survey: SurveyEntity,
     file: File,
-    annotations: List<SurveyAnnotationEntity>,
-    onSaveAnnotation: (SurveyAnnotationEntity) -> Unit,
-    onDeleteAnnotation: (SurveyAnnotationEntity) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    viewModel: SurveyAnnotationViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val annotations by viewModel.observe(survey).collectAsState(initial = emptyList())
+
+    val pngLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("image/png")
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val ok = viewModel.exportAnnotatedPng(context, uri, file, annotations)
+            Toast.makeText(
+                context,
+                context.getString(if (ok) R.string.annotation_export_saved else R.string.annotation_export_failed),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val pdfLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val ok = viewModel.exportAnnotatedPdf(context, uri, file, annotations)
+            Toast.makeText(
+                context,
+                context.getString(if (ok) R.string.annotation_export_saved else R.string.annotation_export_failed),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var viewerSize by remember { mutableStateOf(IntSize.Zero) }
@@ -112,12 +144,12 @@ fun AnnotatedSurveyImageViewer(
                 editingIsNew = false
             },
             onSave = {
-                onSaveAnnotation(it)
+                viewModel.save(it)
                 editingAnnotation = null
                 editingIsNew = false
             },
             onDelete = {
-                onDeleteAnnotation(it)
+                viewModel.delete(it)
                 editingAnnotation = null
                 editingIsNew = false
             }
@@ -158,12 +190,14 @@ fun AnnotatedSurveyImageViewer(
                             val nx = ((base.x - imageRect.left) / imageRect.width).coerceIn(0f, 1f)
                             val ny = ((base.y - imageRect.top) / imageRect.height).coerceIn(0f, 1f)
                             val now = System.currentTimeMillis()
+                            val uuid = UUID.randomUUID()
                             editingAnnotation = SurveyAnnotationEntity(
-                                id = UUID.randomUUID().toString(),
+                                id = uuid.toString(),
                                 serverUrl = survey.serverUrl,
                                 entityType = survey.entityType,
                                 dbId = survey.dbId,
                                 surveyKey = survey.annotationKey(),
+                                markerId = "M-" + uuid.toString().take(6).uppercase(),
                                 normalizedX = nx,
                                 normalizedY = ny,
                                 createdAt = now,
@@ -197,6 +231,7 @@ fun AnnotatedSurveyImageViewer(
                     val screen = baseToScreen(base, viewerSize, scale, offset)
                     AnnotationMarker(
                         number = index + 1,
+                        annotation = annotation,
                         screenPosition = screen,
                         onClick = {
                             editingAnnotation = annotation
@@ -294,26 +329,25 @@ fun AnnotatedSurveyImageViewer(
                 }
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = {
-                        scope.launch {
-                            val saved = withContext(Dispatchers.IO) {
-                                saveSurveyImageToGallery(context, file)
-                            }
-                            val msg = if (saved) {
-                                context.getString(R.string.viewer_saved)
-                            } else {
-                                context.getString(R.string.viewer_save_failed)
-                            }
-                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                        }
-                    }) {
+                    IconButton(onClick = { pngLauncher.launch("annotated_survey.png") }) {
                         Icon(
                             Icons.Default.FileDownload,
-                            contentDescription = stringResource(R.string.viewer_save),
+                            contentDescription = stringResource(R.string.annotation_export_png),
                             tint = Color.White
                         )
                     }
-                    Text(stringResource(R.string.viewer_save), color = Color.White, style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.annotation_export_png), color = Color.White, style = MaterialTheme.typography.labelSmall)
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(onClick = { pdfLauncher.launch("annotated_survey.pdf") }) {
+                        Icon(
+                            Icons.Default.FileDownload,
+                            contentDescription = stringResource(R.string.annotation_export_pdf),
+                            tint = Color.White
+                        )
+                    }
+                    Text(stringResource(R.string.annotation_export_pdf), color = Color.White, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -323,13 +357,16 @@ fun AnnotatedSurveyImageViewer(
 @Composable
 private fun AnnotationMarker(
     number: Int,
+    annotation: SurveyAnnotationEntity,
     screenPosition: Offset,
     onClick: () -> Unit
 ) {
     val markerSize = 34.dp
     val markerSizePx = with(androidx.compose.ui.platform.LocalDensity.current) { markerSize.toPx() }
+    val markerId = annotation.markerId.ifBlank { "M" + number }
+    val label = if (annotation.title.isBlank()) markerId else markerId + " - " + annotation.title
 
-    Box(
+    Row(
         modifier = Modifier
             .offset {
                 IntOffset(
@@ -337,16 +374,29 @@ private fun AnnotationMarker(
                     (screenPosition.y - markerSizePx / 2f).roundToInt()
                 )
             }
-            .size(markerSize)
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .border(2.dp, Color.White, CircleShape)
             .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Box(
+            modifier = Modifier
+                .size(markerSize)
+                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                .border(2.dp, Color.White, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = markerId.take(7),
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
         Text(
-            text = number.toString(),
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.labelMedium
+            text = label,
+            color = Color.White,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier
+                .background(Color.Black.copy(alpha = 0.78f))
+                .padding(horizontal = 6.dp, vertical = 3.dp)
         )
     }
 }
@@ -359,6 +409,7 @@ private fun AnnotationEditorDialog(
     onSave: (SurveyAnnotationEntity) -> Unit,
     onDelete: (SurveyAnnotationEntity) -> Unit
 ) {
+    var markerId by remember(annotation.id) { mutableStateOf(annotation.markerId) }
     var title by remember(annotation.id) { mutableStateOf(annotation.title) }
     var category by remember(annotation.id) { mutableStateOf(annotation.category) }
     var notes by remember(annotation.id) { mutableStateOf(annotation.notes) }
@@ -383,6 +434,14 @@ private fun AnnotationEditorDialog(
                     ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = markerId,
+                    onValueChange = { markerId = it },
+                    label = { Text(stringResource(R.string.annotation_label_id)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
@@ -427,6 +486,7 @@ private fun AnnotationEditorDialog(
                 onClick = {
                     onSave(
                         annotation.copy(
+                            markerId = markerId.trim(),
                             title = title.trim(),
                             category = category.trim(),
                             notes = notes.trim(),
