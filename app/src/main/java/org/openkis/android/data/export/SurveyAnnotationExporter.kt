@@ -12,8 +12,9 @@ import java.io.File
 import java.io.OutputStream
 import kotlin.math.max
 import kotlin.math.min
+import javax.inject.Inject
 
-class SurveyAnnotationExporter {
+class SurveyAnnotationExporter @Inject constructor() {
 
     fun exportCsv(output: OutputStream, annotations: List<SurveyAnnotationEntity>) {
         output.bufferedWriter().use { writer ->
