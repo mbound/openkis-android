@@ -19,7 +19,7 @@ class SurveyAnnotationExporter @Inject constructor() {
     fun exportCsv(output: OutputStream, annotations: List<SurveyAnnotationEntity>) {
         output.bufferedWriter().use { writer ->
             writer.appendLine(
-                "server_url,entity_type,entity_db_id,survey_key,marker_id,name,category," +
+                "server_url,entity_type,entity_db_id,survey_key,survey_title,marker_id,name,category," +
                     "normalized_x,normalized_y,notes,metadata,created_at,updated_at"
             )
             annotations.forEach { a ->
@@ -29,6 +29,7 @@ class SurveyAnnotationExporter @Inject constructor() {
                         a.entityType,
                         a.dbId,
                         a.surveyKey,
+                        a.surveyTitle,
                         a.markerId,
                         a.title,
                         a.category,
