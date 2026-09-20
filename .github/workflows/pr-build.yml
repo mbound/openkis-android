@@ -1,4 +1,3 @@
-# Long-press annotation build validation
 name: PR Build
 
 on:
