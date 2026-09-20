@@ -18,6 +18,7 @@ import org.openkis.android.data.local.dao.ServerDao
 import org.openkis.android.data.local.dao.SpringDao
 import org.openkis.android.data.local.dao.SurveyDao
 import org.openkis.android.data.local.dao.SurveyAnnotationDao
+import org.openkis.android.data.remote.CloudflareClearanceInterceptor
 import org.openkis.android.data.remote.DynamicBaseUrlInterceptor
 import org.openkis.android.data.remote.OpenKisApi
 import retrofit2.Retrofit
@@ -73,12 +74,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
+        dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
+        cloudflareClearanceInterceptor: CloudflareClearanceInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(dynamicBaseUrlInterceptor)
+            .addInterceptor(cloudflareClearanceInterceptor)
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BASIC
             })
