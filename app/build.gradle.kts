@@ -32,6 +32,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".cftest"
+            versionNameSuffix = "-cf-test"
+        }
         release {
             isMinifyEnabled = false
             // Use the persistent release keystore on CI; fall back to debug locally
