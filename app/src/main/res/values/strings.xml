@@ -275,4 +275,8 @@
     <string name="remove">Remove</string>
     <string name="back">Back</string>
     <string name="search">Search</string>
+    <string name="settings_cloudflare_unlock">Experimental Cloudflare Unlock</string>
+    <string name="settings_cloudflare_unlock_desc">Open the Piemonte server in Android WebView, complete any Cloudflare check, then retry sync. Test build only.</string>
+    <string name="settings_cloudflare_unlock_prod">Unlock Piemonte</string>
+    <string name="settings_cloudflare_unlock_dev">Unlock Dev</string>
 </resources>
