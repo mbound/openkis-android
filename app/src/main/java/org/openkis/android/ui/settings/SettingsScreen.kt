@@ -1,6 +1,7 @@
 package org.openkis.android.ui.settings
 
 import android.app.Activity
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -351,6 +352,67 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         onCheckedChange = { viewModel.setDevSourcesEnabled(it) },
                         modifier = Modifier.padding(start = 8.dp)
                     )
+                }
+            }
+
+            // Experimental Cloudflare workaround
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Cloud,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.settings_cloudflare_unlock),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_cloudflare_unlock_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(context, CloudflareUnlockActivity::class.java).apply {
+                                        putExtra(
+                                            CloudflareUnlockActivity.EXTRA_URL,
+                                            "https://catastogrotte-piemonte.net/openkis_json.php?mod=caves"
+                                        )
+                                    }
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.settings_cloudflare_unlock_prod))
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(context, CloudflareUnlockActivity::class.java).apply {
+                                        putExtra(
+                                            CloudflareUnlockActivity.EXTRA_URL,
+                                            "https://dev.catastogrotte-piemonte.net/export/cavita-naturali/csv"
+                                        )
+                                    }
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.settings_cloudflare_unlock_dev))
+                        }
+                    }
                 }
             }
 
