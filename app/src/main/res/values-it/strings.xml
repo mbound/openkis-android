@@ -264,4 +264,8 @@
     <string name="remove">Rimuovi</string>
     <string name="back">Indietro</string>
     <string name="search">Cerca</string>
+    <string name="settings_cloudflare_unlock">Sblocco Cloudflare sperimentale</string>
+    <string name="settings_cloudflare_unlock_desc">Apri il server Piemonte in Android WebView, completa l’eventuale controllo Cloudflare, poi riprova la sincronizzazione. Solo build di test.</string>
+    <string name="settings_cloudflare_unlock_prod">Sblocca Piemonte</string>
+    <string name="settings_cloudflare_unlock_dev">Sblocca Dev</string>
 </resources>
