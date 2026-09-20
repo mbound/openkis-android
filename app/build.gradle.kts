@@ -21,7 +21,9 @@ android {
 
     signingConfigs {
         getByName("debug") {
-            // Uses default debug keystore for local development builds
+            // Explicit dual signing for broad package-installer compatibility.
+            enableV1Signing = true
+            enableV2Signing = true
         }
         create("release") {
             storeFile = System.getenv("RELEASE_STORE_FILE")?.let { file(it) }
@@ -33,8 +35,8 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".cftest"
-            versionNameSuffix = "-cf-test"
+            applicationIdSuffix = ".cfworkaround"
+            versionNameSuffix = "-cf-workaround"
         }
         release {
             isMinifyEnabled = false
