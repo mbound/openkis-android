@@ -20,6 +20,11 @@
         android:usesCleartextTraffic="true">
 
         <activity
+            android:name=".ui.settings.CloudflareUnlockActivity"
+            android:exported="false"
+            android:theme="@style/Theme.OpenKIS" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.OpenKIS">
