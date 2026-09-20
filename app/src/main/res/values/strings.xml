@@ -275,4 +275,5 @@
     <string name="remove">Remove</string>
     <string name="back">Back</string>
     <string name="search">Search</string>
+    <string name="viewer_long_press_annotation_hint">Long-press the survey map to add a marker.</string>
 </resources>
