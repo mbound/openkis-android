@@ -53,10 +53,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -85,6 +87,7 @@ fun AnnotatedSurveyImageViewer(
     viewModel: SurveyAnnotationViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val hapticFeedback = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val annotationFlow = remember(
         survey.serverUrl,
@@ -145,6 +148,33 @@ fun AnnotatedSurveyImageViewer(
         fittedImageRect(viewerSize, imageSize)
     }
 
+    fun beginAnnotationAt(tap: Offset): Boolean {
+        if (viewerSize == IntSize.Zero || imageRect.isEmpty) return false
+
+        val base = screenToBase(tap, viewerSize, scale, offset)
+        if (!imageRect.contains(base)) return false
+
+        val nx = ((base.x - imageRect.left) / imageRect.width).coerceIn(0f, 1f)
+        val ny = ((base.y - imageRect.top) / imageRect.height).coerceIn(0f, 1f)
+        val now = System.currentTimeMillis()
+        val uuid = UUID.randomUUID()
+        editingAnnotation = SurveyAnnotationEntity(
+            id = uuid.toString(),
+            serverUrl = survey.serverUrl,
+            entityType = survey.entityType,
+            dbId = survey.dbId,
+            surveyKey = survey.annotationKey(),
+            surveyTitle = survey.title,
+            markerId = "M-" + uuid.toString().take(6).uppercase(),
+            normalizedX = nx,
+            normalizedY = ny,
+            createdAt = now,
+            updatedAt = now
+        )
+        editingIsNew = true
+        return true
+    }
+
     if (editingAnnotation != null) {
         AnnotationEditorDialog(
             annotation = editingAnnotation!!,
@@ -190,31 +220,15 @@ fun AnnotatedSurveyImageViewer(
                                 offset = Offset.Zero
                             }
                         },
-                        onTap = { tap ->
-                            if (!annotationMode || viewerSize == IntSize.Zero || imageRect.isEmpty) {
-                                return@detectTapGestures
+                        onLongPress = { tap ->
+                            if (beginAnnotationAt(tap)) {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
-                            val base = screenToBase(tap, viewerSize, scale, offset)
-                            if (!imageRect.contains(base)) return@detectTapGestures
-
-                            val nx = ((base.x - imageRect.left) / imageRect.width).coerceIn(0f, 1f)
-                            val ny = ((base.y - imageRect.top) / imageRect.height).coerceIn(0f, 1f)
-                            val now = System.currentTimeMillis()
-                            val uuid = UUID.randomUUID()
-                            editingAnnotation = SurveyAnnotationEntity(
-                                id = uuid.toString(),
-                                serverUrl = survey.serverUrl,
-                                entityType = survey.entityType,
-                                dbId = survey.dbId,
-                                surveyKey = survey.annotationKey(),
-                                surveyTitle = survey.title,
-                                markerId = "M-" + uuid.toString().take(6).uppercase(),
-                                normalizedX = nx,
-                                normalizedY = ny,
-                                createdAt = now,
-                                updatedAt = now
-                            )
-                            editingIsNew = true
+                        },
+                        onTap = { tap ->
+                            if (annotationMode) {
+                                beginAnnotationAt(tap)
+                            }
                         }
                     )
                 }
@@ -281,14 +295,21 @@ fun AnnotatedSurveyImageViewer(
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close), tint = Color.White)
                     }
                 }
-                if (annotationMode) {
-                    Text(
-                        text = stringResource(R.string.viewer_annotation_hint),
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp)
-                    )
-                } else if (scale > 1f) {
+                Text(
+                    text = if (annotationMode) {
+                        stringResource(R.string.viewer_annotation_hint)
+                    } else {
+                        stringResource(R.string.viewer_long_press_annotation_hint)
+                    },
+                    color = Color.White.copy(alpha = if (annotationMode) 1f else 0.82f),
+                    style = if (annotationMode) {
+                        MaterialTheme.typography.labelMedium
+                    } else {
+                        MaterialTheme.typography.labelSmall
+                    },
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 6.dp)
+                )
+                if (!annotationMode && scale > 1f) {
                     Text(
                         text = stringResource(R.string.viewer_double_tap_reset),
                         color = Color.White.copy(alpha = 0.7f),
