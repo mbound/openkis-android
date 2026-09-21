@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import android.util.LruCache
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -14,7 +15,7 @@ import javax.inject.Singleton
 class IconCompositor @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val iconSizePx = 128
+    private val iconSizePx = 64
     private val cache = LruCache<String, Bitmap>(64)
 
     /**
@@ -36,7 +37,7 @@ class IconCompositor @Inject constructor(
             try {
                 context.assets.open(path).use { stream ->
                     val src = BitmapFactory.decodeStream(stream) ?: return@use
-                    canvas.drawBitmap(src, 0f, 0f, null)
+                    canvas.drawBitmap(src, null, Rect(0, 0, iconSizePx, iconSizePx), null)
                     src.recycle()
                 }
             } catch (_: Exception) {
