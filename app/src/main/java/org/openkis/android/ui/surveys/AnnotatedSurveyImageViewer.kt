@@ -423,7 +423,7 @@ private fun AnnotationMarker(
             }
             // Keep the visual marker small while retaining a comfortable touch target.
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp, end = 8.dp),
+            .padding(end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
