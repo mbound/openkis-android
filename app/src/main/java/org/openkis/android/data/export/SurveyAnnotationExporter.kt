@@ -105,25 +105,19 @@ class SurveyAnnotationExporter @Inject constructor() {
         val bitmap = decodeForExport(imageFile)
         val canvas = Canvas(bitmap)
 
-        val radius = max(16f, min(bitmap.width, bitmap.height) * 0.012f)
+        val radius = max(6f, min(bitmap.width, bitmap.height) * 0.0045f)
         val markerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(190, 35, 35)
+            color = Color.RED
             style = Paint.Style.FILL
         }
         val markerBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             style = Paint.Style.STROKE
-            strokeWidth = max(3f, radius * 0.15f)
-        }
-        val markerText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            textAlign = Paint.Align.CENTER
-            textSize = radius * 0.85f
-            isFakeBoldText = true
+            strokeWidth = max(1.5f, radius * 0.16f)
         }
         val labelText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
-            textSize = radius * 0.9f
+            textSize = max(18f, radius * 1.8f)
             isFakeBoldText = true
         }
         val labelBackground = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -135,19 +129,12 @@ class SurveyAnnotationExporter @Inject constructor() {
             val x = annotation.normalizedX.coerceIn(0f, 1f) * bitmap.width
             val y = annotation.normalizedY.coerceIn(0f, 1f) * bitmap.height
             val markerId = annotation.markerId.ifBlank { "M" + (index + 1) }
-            val label = if (annotation.title.isBlank()) {
-                markerId
-            } else {
-                markerId + " - " + annotation.title
-            }
+            val label = annotation.title.ifBlank { markerId }
 
             canvas.drawCircle(x, y, radius, markerPaint)
             canvas.drawCircle(x, y, radius, markerBorder)
 
-            val markerBaseline = y - (markerText.ascent() + markerText.descent()) / 2f
-            canvas.drawText(markerId.take(7), x, markerBaseline, markerText)
-
-            val padding = radius * 0.35f
+            val padding = max(4f, radius * 0.4f)
             val textWidth = labelText.measureText(label)
             val labelHeight = labelText.fontMetrics.run { bottom - top } + padding * 2f
             var labelLeft = x + radius + padding
