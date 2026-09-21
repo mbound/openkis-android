@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -264,6 +265,19 @@ fun AnnotatedSurveyImageViewer(
                         }
                     )
                 }
+
+                // Show placement immediately while the new-annotation editor is open.
+                if (editingIsNew) {
+                    editingAnnotation?.let { pending ->
+                        val base = Offset(
+                            x = imageRect.left + pending.normalizedX.coerceIn(0f, 1f) * imageRect.width,
+                            y = imageRect.top + pending.normalizedY.coerceIn(0f, 1f) * imageRect.height
+                        )
+                        PendingAnnotationMarker(
+                            screenPosition = baseToScreen(base, viewerSize, scale, offset)
+                        )
+                    }
+                }
             }
 
             Column(
@@ -324,6 +338,7 @@ fun AnnotatedSurveyImageViewer(
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .background(Color.Black.copy(alpha = 0.62f))
+                    .navigationBarsPadding()
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
@@ -393,44 +408,61 @@ private fun AnnotationMarker(
     screenPosition: Offset,
     onClick: () -> Unit
 ) {
-    val markerSize = 34.dp
-    val markerSizePx = with(androidx.compose.ui.platform.LocalDensity.current) { markerSize.toPx() }
+    val dotSize = 14.dp
+    val dotSizePx = with(androidx.compose.ui.platform.LocalDensity.current) { dotSize.toPx() }
     val markerId = annotation.markerId.ifBlank { "M" + number }
-    val label = if (annotation.title.isBlank()) markerId else markerId + " - " + annotation.title
+    val label = annotation.title.ifBlank { markerId }
 
     Row(
         modifier = Modifier
             .offset {
                 IntOffset(
-                    (screenPosition.x - markerSizePx / 2f).roundToInt(),
-                    (screenPosition.y - markerSizePx / 2f).roundToInt()
+                    (screenPosition.x - dotSizePx / 2f).roundToInt(),
+                    (screenPosition.y - dotSizePx / 2f).roundToInt()
                 )
             }
-            .clickable(onClick = onClick),
+            // Keep the visual marker small while retaining a comfortable touch target.
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(markerSize)
-                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                .border(2.dp, Color.White, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = markerId.take(7),
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.labelSmall
-            )
-        }
+                .size(dotSize)
+                .background(Color.Red, CircleShape)
+                .border(1.dp, Color.White, CircleShape)
+        )
         Text(
             text = label,
             color = Color.White,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier
-                .background(Color.Black.copy(alpha = 0.78f))
-                .padding(horizontal = 6.dp, vertical = 3.dp)
+                .padding(start = 5.dp)
+                .background(Color.Black.copy(alpha = 0.72f))
+                .padding(horizontal = 5.dp, vertical = 2.dp)
         )
     }
+}
+
+@Composable
+private fun PendingAnnotationMarker(
+    screenPosition: Offset
+) {
+    val dotSize = 14.dp
+    val dotSizePx = with(androidx.compose.ui.platform.LocalDensity.current) { dotSize.toPx() }
+
+    Box(
+        modifier = Modifier
+            .offset {
+                IntOffset(
+                    (screenPosition.x - dotSizePx / 2f).roundToInt(),
+                    (screenPosition.y - dotSizePx / 2f).roundToInt()
+                )
+            }
+            .size(dotSize)
+            .background(Color.Red, CircleShape)
+            .border(1.dp, Color.White, CircleShape)
+    )
 }
 
 @Composable
