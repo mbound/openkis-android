@@ -171,8 +171,10 @@ class CloudflareWebViewFetchActivity : Activity() {
 
             val currentHost = runCatching { Uri.parse(href).host }.getOrNull()
             if (currentHost != allowedHost) {
+                val pending = CloudflareFetchBridge.get(requestId)
+                    ?: return@evaluateJavascript fail(IOException("Browser sync request expired"))
                 statusView.text = "Returning to Piemonte server…"
-                webView.loadUrl(CloudflareFetchBridge.get(requestId)?.baseUrl + "/")
+                webView.loadUrl(pending.baseUrl + "/")
                 return@evaluateJavascript
             }
 
