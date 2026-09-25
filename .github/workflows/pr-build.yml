@@ -26,3 +26,10 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
+
+      - name: Upload CF WebView test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenKIS-CF-WebView-Test
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

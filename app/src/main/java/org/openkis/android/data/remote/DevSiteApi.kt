@@ -41,6 +41,13 @@ class DevSiteApi @Inject constructor(
                 val request = Request.Builder().url(url).build()
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
+                        if (
+                            response.code == 403 &&
+                            response.header("cf-mitigated").equals("challenge", ignoreCase = true)
+                        ) {
+                            logger.w("DevSiteApi", "Cloudflare challenge for $url")
+                            throw CloudflareChallengeException(url)
+                        }
                         logger.w("DevSiteApi", "CSV not available: HTTP ${response.code} for $entityPath")
                         return@withContext null
                     }
@@ -53,6 +60,8 @@ class DevSiteApi @Inject constructor(
                     body
                 }
             }
+        } catch (e: CloudflareChallengeException) {
+            throw e
         } catch (e: Exception) {
             logger.e("DevSiteApi", "CSV fetch error for $entityPath: ${e.message}")
             null
@@ -70,6 +79,13 @@ class DevSiteApi @Inject constructor(
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
+                    if (
+                        response.code == 403 &&
+                        response.header("cf-mitigated").equals("challenge", ignoreCase = true)
+                    ) {
+                        logger.w("DevSiteApi", "Cloudflare challenge for $url")
+                        throw CloudflareChallengeException(url)
+                    }
                     logger.e("DevSiteApi", "CSV fetch failed: HTTP ${response.code} for $url")
                     throw IOException("HTTP ${response.code} fetching $url")
                 }
