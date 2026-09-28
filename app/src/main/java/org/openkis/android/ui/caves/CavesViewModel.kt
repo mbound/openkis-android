@@ -18,6 +18,7 @@ import org.openkis.android.data.local.entity.CaveEntity
 import org.openkis.android.data.local.entity.SpringEntity
 import org.openkis.android.data.repository.CaveRepository
 import org.openkis.android.data.repository.SyncManager
+import org.openkis.android.ui.filter.ObjectNumericFilters
 import javax.inject.Inject
 
 enum class ItemType(@StringRes val labelRes: Int) {
@@ -41,7 +42,8 @@ private data class CavesFilterState(
     val query: String,
     val type: ItemType,
     val enabled: Set<ItemType>,
-    val visibleUrls: Set<String>
+    val visibleUrls: Set<String>,
+    val numericFilters: ObjectNumericFilters
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -57,6 +59,9 @@ class CavesViewModel @Inject constructor(
     private val _selectedType = MutableStateFlow(ItemType.CAVES)
     val selectedType: StateFlow<ItemType> = _selectedType.asStateFlow()
 
+    private val _numericFilters = MutableStateFlow(ObjectNumericFilters())
+    val numericFilters: StateFlow<ObjectNumericFilters> = _numericFilters.asStateFlow()
+
     val enabledTypes: StateFlow<Set<ItemType>> = combine(
         syncManager.showCaves,
         syncManager.showSprings,
@@ -70,10 +75,10 @@ class CavesViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ItemType.entries.toSet())
 
     val items: StateFlow<List<CaveListItem>> = combine(
-        _searchQuery, _selectedType, enabledTypes, syncManager.visibleServerUrls
-    ) { query, type, enabled, visibleUrls ->
-        CavesFilterState(query, type, enabled, visibleUrls)
-    }.flatMapLatest { (query, type, enabled, visibleUrls) ->
+        _searchQuery, _selectedType, enabledTypes, syncManager.visibleServerUrls, _numericFilters
+    ) { query, type, enabled, visibleUrls, numericFilters ->
+        CavesFilterState(query, type, enabled, visibleUrls, numericFilters)
+    }.flatMapLatest { (query, type, enabled, visibleUrls, numericFilters) ->
         if (type !in enabled) {
             kotlinx.coroutines.flow.flowOf(emptyList())
         } else {
@@ -82,7 +87,10 @@ class CavesViewModel @Inject constructor(
                     val flow = if (query.isBlank()) repository.getAllCaves() else repository.searchCaves(query)
                     flow.flatMapLatest { caves ->
                         kotlinx.coroutines.flow.flowOf(
-                            caves.filter { it.serverUrl in visibleUrls }.map { it.toListItem() }
+                            caves.filter {
+                                it.serverUrl in visibleUrls &&
+                                    numericFilters.matches(it.depthTotal, it.lengthTotal, it.elevation)
+                            }.map { it.toListItem() }
                         )
                     }
                 }
@@ -90,7 +98,10 @@ class CavesViewModel @Inject constructor(
                     val flow = if (query.isBlank()) repository.getAllSprings() else repository.searchSprings(query)
                     flow.flatMapLatest { springs ->
                         kotlinx.coroutines.flow.flowOf(
-                            springs.filter { it.serverUrl in visibleUrls }.map { it.toListItem() }
+                            springs.filter {
+                                it.serverUrl in visibleUrls &&
+                                    numericFilters.matches(null, null, it.elevation)
+                            }.map { it.toListItem() }
                         )
                     }
                 }
@@ -98,7 +109,10 @@ class CavesViewModel @Inject constructor(
                     val flow = if (query.isBlank()) repository.getAllArtificials() else repository.searchArtificials(query)
                     flow.flatMapLatest { arts ->
                         kotlinx.coroutines.flow.flowOf(
-                            arts.filter { it.serverUrl in visibleUrls }.map { it.toListItem() }
+                            arts.filter {
+                                it.serverUrl in visibleUrls &&
+                                    numericFilters.matches(it.depthTotal, it.lengthTotal, it.elevation)
+                            }.map { it.toListItem() }
                         )
                     }
                 }
@@ -112,6 +126,10 @@ class CavesViewModel @Inject constructor(
 
     fun setSelectedType(type: ItemType) {
         _selectedType.value = type
+    }
+
+    fun setNumericFilters(filters: ObjectNumericFilters) {
+        _numericFilters.value = filters
     }
 }
 

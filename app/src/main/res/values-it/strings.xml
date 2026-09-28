@@ -265,4 +265,19 @@
     <string name="back">Indietro</string>
     <string name="search">Cerca</string>
     <string name="viewer_long_press_annotation_hint">Tieni premuto sulla mappa del rilievo per aggiungere un marcatore.</string>
+    <string name="filters">Filtri</string>
+    <string name="apply">Applica</string>
+    <string name="clear">Cancella</string>
+    <string name="filter_measurements_title">Filtri dimensionali</string>
+    <string name="filter_measurements_desc">Combina liberamente le soglie. Gli oggetti senza una misura richiesta vengono esclusi.</string>
+    <string name="filter_min_depth">Profondità minima</string>
+    <string name="filter_min_length">Lunghezza minima</string>
+    <string name="filter_min_elevation">Quota minima</string>
+    <string name="filter_max_elevation">Quota massima</string>
+    <string name="map_search_title">Cerca sulla mappa</string>
+    <string name="map_search_hint">Grotta, codice, città o luogo</string>
+    <string name="map_search_places">Cerca luoghi</string>
+    <string name="map_search_objects">Oggetti</string>
+    <string name="map_search_no_places">Nessun luogo corrispondente trovato.</string>
+    <string name="map_search_place_error">La ricerca dei luoghi non è disponibile su questo dispositivo.</string>
 </resources>

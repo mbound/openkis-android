@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -28,6 +30,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -35,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import org.openkis.android.R
+import org.openkis.android.ui.filter.NumericFilterDialog
 import org.openkis.android.ui.theme.ArtificialMarker
 import org.openkis.android.ui.theme.CaveMarker
 import org.openkis.android.ui.theme.SpringMarker
@@ -49,6 +55,19 @@ fun CaveListScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedType by viewModel.selectedType.collectAsState()
     val enabledTypes by viewModel.enabledTypes.collectAsState()
+    val numericFilters by viewModel.numericFilters.collectAsState()
+    var showFilters by remember { mutableStateOf(false) }
+
+    if (showFilters) {
+        NumericFilterDialog(
+            initial = numericFilters,
+            onDismiss = { showFilters = false },
+            onApply = {
+                viewModel.setNumericFilters(it)
+                showFilters = false
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -75,6 +94,19 @@ fun CaveListScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = { Text(stringResource(R.string.search_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, stringResource(R.string.search)) },
+                trailingIcon = {
+                    IconButton(onClick = { showFilters = true }) {
+                        Icon(
+                            Icons.Default.FilterList,
+                            contentDescription = stringResource(R.string.filters),
+                            tint = if (numericFilters.isActive) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                },
                 singleLine = true
             )
 

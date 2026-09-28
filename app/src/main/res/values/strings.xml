@@ -276,4 +276,19 @@
     <string name="back">Back</string>
     <string name="search">Search</string>
     <string name="viewer_long_press_annotation_hint">Long-press the survey map to add a marker.</string>
+    <string name="filters">Filters</string>
+    <string name="apply">Apply</string>
+    <string name="clear">Clear</string>
+    <string name="filter_measurements_title">Measurement filters</string>
+    <string name="filter_measurements_desc">Combine any thresholds below. Objects without a required measurement are excluded.</string>
+    <string name="filter_min_depth">Minimum depth</string>
+    <string name="filter_min_length">Minimum length</string>
+    <string name="filter_min_elevation">Minimum elevation</string>
+    <string name="filter_max_elevation">Maximum elevation</string>
+    <string name="map_search_title">Search map</string>
+    <string name="map_search_hint">Cave, code, city or landmark</string>
+    <string name="map_search_places">Search places</string>
+    <string name="map_search_objects">Objects</string>
+    <string name="map_search_no_places">No matching places found.</string>
+    <string name="map_search_place_error">Place search is unavailable on this device.</string>
 </resources>

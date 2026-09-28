@@ -27,10 +27,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ZoomOutMap
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -58,9 +60,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.openkis.android.R
+import org.openkis.android.ui.filter.NumericFilterDialog
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.BoundingBox
@@ -79,14 +85,107 @@ fun MapScreen(
     val artificials by viewModel.artificials.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    var hasZoomedToFit by remember { mutableStateOf(false) }
+    var hasZoomedToFit by remember { mutableStateOf(viewModel.cameraState != null) }
     var showLayerPanel by remember { mutableStateOf(false) }
     var showLegend by remember { mutableStateOf(false) }
+    var showSearch by remember { mutableStateOf(false) }
+    var showFilters by remember { mutableStateOf(false) }
     var locationEnabled by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val locationOverlayRef = remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+    val labelOverlay = remember { MapObjectLabelOverlay(minZoom = 15.0) }
+
+    val searchableObjects = remember(caves, springs, artificials, uiState.showCaves, uiState.showSprings, uiState.showArtificials) {
+        buildList {
+            if (uiState.showCaves) {
+                caves.forEach {
+                    add(
+                        MapSearchObject(
+                            type = "caves",
+                            code = it.code,
+                            name = it.name,
+                            searchText = listOf(
+                                it.code, it.name, it.synonyms, it.municipality, it.locality
+                            ).joinToString(" "),
+                            latitude = it.latitude,
+                            longitude = it.longitude
+                        )
+                    )
+                }
+            }
+            if (uiState.showSprings) {
+                springs.forEach {
+                    add(
+                        MapSearchObject(
+                            type = "springs",
+                            code = it.code,
+                            name = it.name,
+                            searchText = listOf(
+                                it.code, it.name, it.municipality
+                            ).joinToString(" "),
+                            latitude = it.latitude,
+                            longitude = it.longitude
+                        )
+                    )
+                }
+            }
+            if (uiState.showArtificials) {
+                artificials.forEach {
+                    add(
+                        MapSearchObject(
+                            type = "artificials",
+                            code = it.code,
+                            name = it.name,
+                            searchText = listOf(
+                                it.code, it.name, it.synonyms, it.municipality, it.locality
+                            ).joinToString(" "),
+                            latitude = it.latitude,
+                            longitude = it.longitude
+                        )
+                    )
+                }
+            }
+        }
+    }
 
     Configuration.getInstance().userAgentValue = context.packageName
+
+    if (showSearch) {
+        MapSearchDialog(
+            objects = searchableObjects,
+            onDismiss = { showSearch = false },
+            onObjectSelected = { item ->
+                mapViewRef.value?.controller?.animateTo(
+                    GeoPoint(item.latitude, item.longitude),
+                    16.0,
+                    700L
+                )
+                viewModel.selectMarker(item.type, item.code)
+                showSearch = false
+            },
+            onPlaceSelected = { latitude, longitude ->
+                viewModel.clearSelection()
+                mapViewRef.value?.controller?.animateTo(
+                    GeoPoint(latitude, longitude),
+                    13.5,
+                    700L
+                )
+                showSearch = false
+            }
+        )
+    }
+
+    if (showFilters) {
+        NumericFilterDialog(
+            initial = uiState.numericFilters,
+            onDismiss = { showFilters = false },
+            onApply = {
+                viewModel.setNumericFilters(it)
+                viewModel.clearSelection()
+                showFilters = false
+            }
+        )
+    }
 
     // Location permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -104,6 +203,14 @@ fun MapScreen(
     // Clean up location overlay when leaving the screen
     DisposableEffect(Unit) {
         onDispose {
+            mapViewRef.value?.let { map ->
+                val center = map.mapCenter
+                viewModel.saveCamera(
+                    center.latitude,
+                    center.longitude,
+                    map.zoomLevelDouble
+                )
+            }
             locationOverlayRef.value?.disableMyLocation()
             locationOverlayRef.value?.disableFollowLocation()
         }
@@ -117,11 +224,20 @@ fun MapScreen(
                     setTileSource(TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
                     zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
-                    controller.setZoom(8.0)
-                    // Default center on Piedmont region
-                    controller.setCenter(GeoPoint(44.7, 7.7))
                     minZoomLevel = 3.0
                     maxZoomLevel = 21.0
+
+                    val savedCamera = viewModel.cameraState
+                    if (savedCamera != null) {
+                        controller.setZoom(savedCamera.zoom)
+                        controller.setCenter(
+                            GeoPoint(savedCamera.latitude, savedCamera.longitude)
+                        )
+                    } else {
+                        controller.setZoom(8.0)
+                        // Default center on Piedmont region
+                        controller.setCenter(GeoPoint(44.7, 7.7))
+                    }
 
                     // Smooth zoom and scaling
                     isTilesScaledToDpi = true
@@ -135,6 +251,32 @@ fun MapScreen(
                     overlays.add(locationOverlay)
 
                     mapViewRef.value = this
+
+                    addMapListener(object : MapListener {
+                        override fun onScroll(event: ScrollEvent?): Boolean {
+                            mapViewRef.value?.let { map ->
+                                val center = map.mapCenter
+                                viewModel.saveCamera(
+                                    center.latitude,
+                                    center.longitude,
+                                    map.zoomLevelDouble
+                                )
+                            }
+                            return false
+                        }
+
+                        override fun onZoom(event: ZoomEvent?): Boolean {
+                            mapViewRef.value?.let { map ->
+                                val center = map.mapCenter
+                                viewModel.saveCamera(
+                                    center.latitude,
+                                    center.longitude,
+                                    map.zoomLevelDouble
+                                )
+                            }
+                            return false
+                        }
+                    })
                 }
             },
             update = { mapView ->
@@ -219,6 +361,43 @@ fun MapScreen(
                     }
                 }
 
+                labelOverlay.points = buildList {
+                    if (uiState.showCaves) {
+                        caves.forEach {
+                            add(
+                                MapLabelPoint(
+                                    it.latitude,
+                                    it.longitude,
+                                    it.name.ifBlank { it.code }
+                                )
+                            )
+                        }
+                    }
+                    if (uiState.showSprings) {
+                        springs.forEach {
+                            add(
+                                MapLabelPoint(
+                                    it.latitude,
+                                    it.longitude,
+                                    it.name.ifBlank { it.code }
+                                )
+                            )
+                        }
+                    }
+                    if (uiState.showArtificials) {
+                        artificials.forEach {
+                            add(
+                                MapLabelPoint(
+                                    it.latitude,
+                                    it.longitude,
+                                    it.name.ifBlank { it.code }
+                                )
+                            )
+                        }
+                    }
+                }
+                mapView.overlays.add(labelOverlay)
+
                 // Auto-zoom to fit all markers on first data load
                 if (!hasZoomedToFit) {
                     val allPoints = mutableListOf<GeoPoint>()
@@ -261,6 +440,34 @@ fun MapScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            SmallFloatingActionButton(
+                onClick = { showSearch = true }
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = stringResource(R.string.search)
+                )
+            }
+
+            SmallFloatingActionButton(
+                onClick = { showFilters = true },
+                containerColor = if (uiState.numericFilters.isActive) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                }
+            ) {
+                Icon(
+                    Icons.Default.FilterList,
+                    contentDescription = stringResource(R.string.filters),
+                    tint = if (uiState.numericFilters.isActive) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+
             SmallFloatingActionButton(
                 onClick = { showLayerPanel = !showLayerPanel; showLegend = false },
                 containerColor = if (showLayerPanel) MaterialTheme.colorScheme.primaryContainer
@@ -366,7 +573,7 @@ fun MapScreen(
             Card(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 72.dp, end = 16.dp),
+                    .padding(top = 112.dp, end = 72.dp),
                 elevation = CardDefaults.cardElevation(8.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -469,8 +676,8 @@ fun MapScreen(
                     elevation = CardDefaults.cardElevation(8.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Box {
-                        Column(modifier = Modifier.padding(16.dp).padding(end = 24.dp)) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp).padding(end = 40.dp)) {
                             Text(
                                 text = selectedName,
                                 style = MaterialTheme.typography.titleMedium
