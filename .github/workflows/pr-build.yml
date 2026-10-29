@@ -13,6 +13,74 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Diagnose Piemonte Cloudflare with curl and Chrome
+        shell: bash
+        run: |
+          set +e
+          echo "=== curl ==="
+          for url in             "https://catastogrotte-piemonte.net/openkis_json.php?mod=caves"             "https://dev.catastogrotte-piemonte.net/export/cavita-naturali/csv"; do
+            echo "--- $url"
+            curl -sS -L --max-time 30 -D /tmp/h -o /tmp/b "$url"
+            awk 'toupper($1) ~ /^HTTP\// {code=$2} END {print "HTTP", code}' /tmp/h
+            grep -iE '^(server|cf-mitigated|cf-ray|content-type):' /tmp/h || true
+            head -c 180 /tmp/b | tr '\n' ' '; echo
+          done
+
+          echo "=== browser tooling ==="
+          which google-chrome || which chromium || true
+          google-chrome --version || chromium --version || true
+          which chromedriver || true
+
+          python3 -m pip install --quiet selenium
+          cat > /tmp/cf_browser_test.py <<'PY'
+          import json, time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+
+          targets = [
+              "https://catastogrotte-piemonte.net/openkis_json.php?mod=caves",
+              "https://dev.catastogrotte-piemonte.net/export/cavita-naturali/csv",
+          ]
+
+          opts = Options()
+          opts.add_argument("--headless=new")
+          opts.add_argument("--no-sandbox")
+          opts.add_argument("--disable-dev-shm-usage")
+          opts.add_argument("--disable-gpu")
+          opts.add_argument("--window-size=1200,900")
+
+          driver = webdriver.Chrome(options=opts)
+          try:
+              for url in targets:
+                  print("\n=== CHROME", url, "===")
+                  driver.get(url)
+                  for i in range(12):
+                      time.sleep(2)
+                      title = driver.title
+                      current = driver.current_url
+                      src = driver.page_source[:500].replace("\n", " ")
+                      cookies = [c.get("name") for c in driver.get_cookies()]
+                      print("t", (i+1)*2, "title=", repr(title), "url=", current, "cookies=", cookies)
+                      if "Just a moment" not in title and "challenges.cloudflare.com" not in current:
+                          break
+                  result = driver.execute_async_script("""
+                    const done = arguments[arguments.length - 1];
+                    fetch(arguments[0], {credentials:'include', cache:'no-store'})
+                      .then(async r => done({
+                        ok:true,
+                        status:r.status,
+                        mitigated:r.headers.get('cf-mitigated') || '',
+                        text:(await r.text()).slice(0,220)
+                      }))
+                      .catch(e => done({ok:false,error:String(e)}));
+                  """, url)
+                  print("fetch=", json.dumps(result))
+                  print("page_prefix=", src)
+          finally:
+              driver.quit()
+          PY
+          python3 /tmp/cf_browser_test.py
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
