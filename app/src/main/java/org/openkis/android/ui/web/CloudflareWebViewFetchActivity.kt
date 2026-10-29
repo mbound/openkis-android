@@ -15,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import org.json.JSONObject
 import org.json.JSONTokener
+import org.openkis.android.R
 import org.openkis.android.data.remote.CloudflareFetchBridge
 import java.io.IOException
 
@@ -41,6 +42,11 @@ class CloudflareWebViewFetchActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         requestId = intent.getStringExtra(EXTRA_REQUEST_ID).orEmpty()
+        if (WebView.getCurrentWebViewPackage() == null) {
+            fail(IOException("Android System WebView is unavailable"))
+            return
+        }
+
         val request = CloudflareFetchBridge.get(requestId)
         if (request == null) {
             finish()
@@ -58,7 +64,7 @@ class CloudflareWebViewFetchActivity : Activity() {
         }
 
         statusView = TextView(this).apply {
-            text = "Opening Piemonte server verification…"
+            text = getString(R.string.cloudflare_opening)
             setPadding(24, 18, 24, 18)
         }
         root.addView(
@@ -100,7 +106,7 @@ class CloudflareWebViewFetchActivity : Activity() {
 
             setDownloadListener { _, _, _, _, _ ->
                 if (!completed && !sequenceActive) {
-                    statusView.text = "Verification passed. Preparing API session…"
+                    statusView.text = getString(R.string.cloudflare_preparing)
                     stopLoading()
                     loadUrl(request.baseUrl + "/")
                 }
@@ -116,7 +122,7 @@ class CloudflareWebViewFetchActivity : Activity() {
         )
 
         val cancel = Button(this).apply {
-            text = "Cancel"
+            text = getString(R.string.cancel)
             setOnClickListener {
                 fail(IOException("Cloudflare browser sync cancelled"))
             }
@@ -131,7 +137,7 @@ class CloudflareWebViewFetchActivity : Activity() {
 
         setContentView(root)
 
-        statusView.text = "Checking Cloudflare verification…"
+        statusView.text = getString(R.string.cloudflare_checking)
         webView.loadUrl(request.urls.first())
     }
 
@@ -163,23 +169,28 @@ class CloudflareWebViewFetchActivity : Activity() {
                     prefix.contains("verify you are human", ignoreCase = true)
 
             if (challenge) {
-                statusView.text =
-                    "Cloudflare verification required. Complete any check shown below; sync will continue automatically."
+                statusView.text = getString(R.string.cloudflare_required)
                 handler.postDelayed({ inspectPage() }, 1_000L)
                 return@evaluateJavascript
             }
 
             val currentHost = runCatching { Uri.parse(href).host }.getOrNull()
+            if (currentHost == "challenges.cloudflare.com") {
+                statusView.text = getString(R.string.cloudflare_required)
+                handler.postDelayed({ inspectPage() }, 1_000L)
+                return@evaluateJavascript
+            }
+
             if (currentHost != allowedHost) {
                 val pending = CloudflareFetchBridge.get(requestId)
                     ?: return@evaluateJavascript fail(IOException("Browser sync request expired"))
-                statusView.text = "Returning to Piemonte server…"
+                statusView.text = getString(R.string.cloudflare_returning)
                 webView.loadUrl(pending.baseUrl + "/")
                 return@evaluateJavascript
             }
 
             sequenceActive = true
-            statusView.text = "Verification passed. Fetching API data in browser session…"
+            statusView.text = getString(R.string.cloudflare_fetching)
             fetchNext()
         }
     }
@@ -191,14 +202,19 @@ class CloudflareWebViewFetchActivity : Activity() {
 
         if (fetchIndex >= request.urls.size) {
             completed = true
-            statusView.text = "Browser sync complete."
+            statusView.text = getString(R.string.cloudflare_complete)
+            CookieManager.getInstance().flush()
             CloudflareFetchBridge.complete(requestId, results)
             finish()
             return
         }
 
         val target = request.urls[fetchIndex]
-        statusView.text = "Fetching ${fetchIndex + 1} of ${request.urls.size}…"
+        statusView.text = getString(
+            R.string.cloudflare_fetch_progress,
+            fetchIndex + 1,
+            request.urls.size
+        )
 
         val quotedTarget = JSONObject.quote(target)
         val script = """
@@ -268,8 +284,7 @@ class CloudflareWebViewFetchActivity : Activity() {
 
             if (challenged) {
                 sequenceActive = false
-                statusView.text =
-                    "Cloudflare challenged this API endpoint. Complete verification below; it will retry automatically."
+                statusView.text = getString(R.string.cloudflare_endpoint_challenged)
                 webView.loadUrl(target)
                 return@evaluateJavascript
             }
