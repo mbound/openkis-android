@@ -48,6 +48,7 @@ class CloudflareWebViewFetchActivity : Activity() {
         }
 
         allowedHost = Uri.parse(request.baseUrl).host.orEmpty()
+        CloudflareFetchBridge.log(requestId, "Browser activity opened for $allowedHost")
         if (allowedHost.isBlank()) {
             fail(IOException("Invalid browser fallback host"))
             return
@@ -77,6 +78,14 @@ class CloudflareWebViewFetchActivity : Activity() {
             settings.allowContentAccess = false
             settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
+            val webViewPackage = WebView.getCurrentWebViewPackage()
+            CloudflareFetchBridge.log(
+                requestId,
+                "System WebView=" + (webViewPackage?.packageName ?: "unknown") +
+                    " " + (webViewPackage?.versionName ?: "")
+            )
+            CloudflareFetchBridge.log(requestId, "WebView user agent=" + settings.userAgentString)
+
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
             cookieManager.setAcceptThirdPartyCookies(this, true)
@@ -100,6 +109,7 @@ class CloudflareWebViewFetchActivity : Activity() {
 
             setDownloadListener { _, _, _, _, _ ->
                 if (!completed && !sequenceActive) {
+                    CloudflareFetchBridge.log(requestId, "Download navigation detected; continuing with verified browser session")
                     statusView.text = "Verification passed. Preparing API session…"
                     stopLoading()
                     loadUrl(request.baseUrl + "/")
@@ -163,6 +173,7 @@ class CloudflareWebViewFetchActivity : Activity() {
                     prefix.contains("verify you are human", ignoreCase = true)
 
             if (challenge) {
+                CloudflareFetchBridge.log(requestId, "Cloudflare verification page detected")
                 statusView.text =
                     "Cloudflare verification required. Complete any check shown below; sync will continue automatically."
                 handler.postDelayed({ inspectPage() }, 1_000L)
@@ -179,6 +190,7 @@ class CloudflareWebViewFetchActivity : Activity() {
             }
 
             sequenceActive = true
+            CloudflareFetchBridge.log(requestId, "Verification passed; starting same-session API fetch")
             statusView.text = "Verification passed. Fetching API data in browser session…"
             fetchNext()
         }
@@ -191,6 +203,10 @@ class CloudflareWebViewFetchActivity : Activity() {
 
         if (fetchIndex >= request.urls.size) {
             completed = true
+            CloudflareFetchBridge.log(
+                requestId,
+                "Browser fetch complete for ${results.size} endpoint(s)"
+            )
             statusView.text = "Browser sync complete."
             CloudflareFetchBridge.complete(requestId, results)
             finish()
@@ -198,6 +214,10 @@ class CloudflareWebViewFetchActivity : Activity() {
         }
 
         val target = request.urls[fetchIndex]
+        CloudflareFetchBridge.log(
+            requestId,
+            "Fetching endpoint ${fetchIndex + 1}/${request.urls.size}: $target"
+        )
         statusView.text = "Fetching ${fetchIndex + 1} of ${request.urls.size}…"
 
         val quotedTarget = JSONObject.quote(target)
@@ -259,6 +279,11 @@ class CloudflareWebViewFetchActivity : Activity() {
             val mitigated = meta.optString("mitigated")
             val prefix = meta.optString("prefix")
 
+            CloudflareFetchBridge.log(
+                requestId,
+                "Endpoint response status=$status length=$length cf-mitigated=$mitigated"
+            )
+
             val challenged =
                 status == 403 &&
                     (
@@ -267,6 +292,7 @@ class CloudflareWebViewFetchActivity : Activity() {
                         )
 
             if (challenged) {
+                CloudflareFetchBridge.log(requestId, "Endpoint was challenged again inside WebView; reopening it visibly")
                 sequenceActive = false
                 statusView.text =
                     "Cloudflare challenged this API endpoint. Complete verification below; it will retry automatically."
@@ -298,6 +324,10 @@ class CloudflareWebViewFetchActivity : Activity() {
 
         if (offset >= length) {
             results[target] = builder.toString()
+            CloudflareFetchBridge.log(
+                requestId,
+                "Transferred ${builder.length} characters for $target"
+            )
             fetchIndex += 1
             webView.evaluateJavascript(
                 "window.__openkisBody = null; window.__openkisMeta = null;"
@@ -333,6 +363,12 @@ class CloudflareWebViewFetchActivity : Activity() {
     private fun fail(error: Throwable) {
         if (completed) return
         completed = true
+        if (::requestId.isInitialized) {
+            CloudflareFetchBridge.log(
+                requestId,
+                "Browser fallback failed: " + (error.message ?: error.javaClass.simpleName)
+            )
+        }
         CloudflareFetchBridge.fail(requestId, error)
         finish()
     }
