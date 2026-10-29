@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.openkis.android.data.local.dao.ArtificialDao
 import org.openkis.android.data.local.dao.CaveDao
 import org.openkis.android.data.local.dao.SpringDao
@@ -33,6 +35,7 @@ class CaveRepository @Inject constructor(
     private val surveyDao: SurveyDao,
     private val surveyAnnotationDao: SurveyAnnotationDao,
     private val surveyFetcher: SurveyFetcher,
+    private val json: Json,
     @ApplicationContext private val context: Context
 ) {
     // Caves
@@ -85,6 +88,30 @@ class CaveRepository @Inject constructor(
         return entities.size
     }
 
+    suspend fun syncCavesFromLegacyContent(serverUrl: String, jsonContent: String): Int {
+        val response = json.decodeFromString<org.openkis.android.data.remote.dto.OpenKisResponse>(jsonContent)
+        val entities = response.items.map { it.toCaveEntity(serverUrl) }
+        caveDao.deleteByServerUrl(serverUrl)
+        caveDao.insertAll(entities)
+        return entities.size
+    }
+
+    suspend fun syncSpringsFromLegacyContent(serverUrl: String, jsonContent: String): Int {
+        val response = json.decodeFromString<org.openkis.android.data.remote.dto.OpenKisResponse>(jsonContent)
+        val entities = response.items.map { it.toSpringEntity(serverUrl) }
+        springDao.deleteByServerUrl(serverUrl)
+        springDao.insertAll(entities)
+        return entities.size
+    }
+
+    suspend fun syncArtificialsFromLegacyContent(serverUrl: String, jsonContent: String): Int {
+        val response = json.decodeFromString<org.openkis.android.data.remote.dto.OpenKisResponse>(jsonContent)
+        val entities = response.items.map { it.toArtificialEntity(serverUrl) }
+        artificialDao.deleteByServerUrl(serverUrl)
+        artificialDao.insertAll(entities)
+        return entities.size
+    }
+
     // --- Dev-site CSV sync (new format: /export/{entity}/csv) ---
 
     suspend fun syncCavesFromDevSite(serverUrl: String): Int {
@@ -104,7 +131,14 @@ class CaveRepository @Inject constructor(
     }
 
     suspend fun syncSpringsFromDevSite(serverUrl: String): Int {
-        val rows = CsvParser.parse(devSiteApi.fetchCsv(serverUrl, "sorgenti"))
+        return syncSpringsFromDevSiteContent(
+            serverUrl,
+            devSiteApi.fetchCsv(serverUrl, "sorgenti")
+        )
+    }
+
+    suspend fun syncSpringsFromDevSiteContent(serverUrl: String, csvContent: String): Int {
+        val rows = CsvParser.parse(csvContent)
         val entities = rows.mapNotNull { it.toSpringEntity(serverUrl) }
         springDao.deleteByServerUrl(serverUrl)
         springDao.insertAll(entities)
@@ -112,7 +146,14 @@ class CaveRepository @Inject constructor(
     }
 
     suspend fun syncArtificialsFromDevSite(serverUrl: String): Int {
-        val rows = CsvParser.parse(devSiteApi.fetchCsv(serverUrl, "cavita-artificiali"))
+        return syncArtificialsFromDevSiteContent(
+            serverUrl,
+            devSiteApi.fetchCsv(serverUrl, "cavita-artificiali")
+        )
+    }
+
+    suspend fun syncArtificialsFromDevSiteContent(serverUrl: String, csvContent: String): Int {
+        val rows = CsvParser.parse(csvContent)
         val entities = rows.mapNotNull { it.toArtificialEntityFromDevSite(serverUrl) }
         artificialDao.deleteByServerUrl(serverUrl)
         artificialDao.insertAll(entities)
