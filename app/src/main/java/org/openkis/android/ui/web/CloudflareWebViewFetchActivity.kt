@@ -1,13 +1,17 @@
 package org.openkis.android.ui.web
 
 import android.app.Activity
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
@@ -34,6 +38,7 @@ class CloudflareWebViewFetchActivity : Activity() {
 
     private var completed = false
     private var sequenceActive = false
+    private var mainFrameChallenge = false
     private var fetchIndex = 0
     private val results = linkedMapOf<String, String>()
 
@@ -75,12 +80,17 @@ class CloudflareWebViewFetchActivity : Activity() {
             settings.databaseEnabled = true
             settings.allowFileAccess = false
             settings.allowContentAccess = false
-            settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            settings.cacheMode = WebSettings.LOAD_DEFAULT
+            settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            settings.javaScriptCanOpenWindowsAutomatically = false
+            settings.setSupportMultipleWindows(false)
 
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
             cookieManager.setAcceptThirdPartyCookies(this, true)
 
+            // Keep the system WebView user agent unchanged for the whole challenge session.
+            webChromeClient = WebChromeClient()
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(
                     view: WebView,
@@ -88,6 +98,39 @@ class CloudflareWebViewFetchActivity : Activity() {
                 ): Boolean {
                     val host = request.url.host.orEmpty()
                     return host != allowedHost && host != "challenges.cloudflare.com"
+                }
+
+                override fun onPageStarted(
+                    view: WebView,
+                    url: String,
+                    favicon: Bitmap?
+                ) {
+                    mainFrameChallenge = false
+                    super.onPageStarted(view, url, favicon)
+                }
+
+                override fun onReceivedHttpError(
+                    view: WebView,
+                    request: WebResourceRequest,
+                    errorResponse: WebResourceResponse
+                ) {
+                    if (request.isForMainFrame) {
+                        val mitigated = errorResponse.responseHeaders
+                            ?.entries
+                            ?.firstOrNull {
+                                it.key.equals("cf-mitigated", ignoreCase = true)
+                            }
+                            ?.value
+                        if (
+                            errorResponse.statusCode == 403 &&
+                            mitigated.equals("challenge", ignoreCase = true)
+                        ) {
+                            mainFrameChallenge = true
+                            statusView.text =
+                                "Cloudflare verification required. Complete any check shown below; sync will continue automatically."
+                        }
+                    }
+                    super.onReceivedHttpError(view, request, errorResponse)
                 }
 
                 override fun onPageFinished(view: WebView, url: String) {
@@ -101,6 +144,7 @@ class CloudflareWebViewFetchActivity : Activity() {
             setDownloadListener { _, _, _, _, _ ->
                 if (!completed && !sequenceActive) {
                     statusView.text = "Verification passed. Preparing API session…"
+                    CookieManager.getInstance().flush()
                     stopLoading()
                     loadUrl(request.baseUrl + "/")
                 }
@@ -158,7 +202,8 @@ class CloudflareWebViewFetchActivity : Activity() {
             val prefix = info?.optString("prefix").orEmpty()
 
             val challenge =
-                title.contains("Just a moment", ignoreCase = true) ||
+                mainFrameChallenge ||
+                    title.contains("Just a moment", ignoreCase = true) ||
                     prefix.contains("security verification", ignoreCase = true) ||
                     prefix.contains("verify you are human", ignoreCase = true)
 
@@ -178,6 +223,7 @@ class CloudflareWebViewFetchActivity : Activity() {
                 return@evaluateJavascript
             }
 
+            CookieManager.getInstance().flush()
             sequenceActive = true
             statusView.text = "Verification passed. Fetching API data in browser session…"
             fetchNext()
@@ -205,7 +251,7 @@ class CloudflareWebViewFetchActivity : Activity() {
             (function() {
               window.__openkisBody = null;
               window.__openkisMeta = null;
-              fetch($quotedTarget, {credentials: 'include', cache: 'no-store'})
+              fetch($quotedTarget, {credentials: 'include', cache: 'no-store', redirect: 'follow'})
                 .then(async function(r) {
                   var text = await r.text();
                   window.__openkisBody = text;
@@ -214,6 +260,7 @@ class CloudflareWebViewFetchActivity : Activity() {
                     status: r.status,
                     len: text.length,
                     mitigated: r.headers.get('cf-mitigated') || '',
+                    contentType: r.headers.get('content-type') || '',
                     prefix: text.slice(0, 220)
                   });
                 })
@@ -257,13 +304,17 @@ class CloudflareWebViewFetchActivity : Activity() {
             val status = meta.optInt("status", 0)
             val length = meta.optInt("len", -1)
             val mitigated = meta.optString("mitigated")
+            val contentType = meta.optString("contentType")
             val prefix = meta.optString("prefix")
 
             val challenged =
-                status == 403 &&
+                mitigated.equals("challenge", ignoreCase = true) ||
                     (
-                        mitigated.equals("challenge", ignoreCase = true) ||
-                            prefix.contains("Just a moment", ignoreCase = true)
+                        status == 403 &&
+                            (
+                                contentType.contains("text/html", ignoreCase = true) ||
+                                    prefix.contains("Just a moment", ignoreCase = true)
+                                )
                         )
 
             if (challenged) {
