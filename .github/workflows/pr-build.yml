@@ -13,6 +13,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Probe Piemonte Cloudflare status
+        shell: bash
+        run: |
+          set +e
+          for url in             "https://catastogrotte-piemonte.net/openkis_json.php?mod=caves"             "https://dev.catastogrotte-piemonte.net/export/cavita-naturali/csv"
+          do
+            echo "===== $url ====="
+            curl -sS -L --max-time 30 -D /tmp/headers -o /tmp/body "$url"
+            code=$(awk 'toupper($1) ~ /^HTTP\\// {c=$2} END {print c}' /tmp/headers)
+            echo "HTTP=$code"
+            grep -i -E '^(server|cf-mitigated|cf-ray):' /tmp/headers || true
+            head -c 180 /tmp/body | tr '\n' ' '
+            echo
+          done
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -26,3 +41,10 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
+
+      - name: Upload CF WebView v2 test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenKIS-CF-WebView-v2-Test
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
