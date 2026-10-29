@@ -32,6 +32,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".cfwebviewv2"
+            versionNameSuffix = "-cf-webview-v2"
+        }
+
         release {
             isMinifyEnabled = false
             // Use the persistent release keystore on CI; fall back to debug locally
