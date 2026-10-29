@@ -13,8 +13,11 @@ import kotlinx.coroutines.flow.map
 import org.openkis.android.data.debug.DebugLogger
 import org.openkis.android.data.local.dao.ServerDao
 import org.openkis.android.data.local.entity.ServerEntity
+import org.openkis.android.data.remote.CloudflareChallengeException
+import org.openkis.android.data.remote.CloudflareWebViewFetcher
 import org.openkis.android.data.remote.DevSiteApi
 import org.openkis.android.data.remote.DynamicBaseUrlInterceptor
+import retrofit2.HttpException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,6 +30,7 @@ class SyncManager @Inject constructor(
     private val serverDao: ServerDao,
     private val dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
     private val devSiteApi: DevSiteApi,
+    private val cloudflareWebViewFetcher: CloudflareWebViewFetcher,
     private val debugLogger: DebugLogger
 ) {
     companion object {
@@ -101,22 +105,28 @@ class SyncManager @Inject constructor(
         debugLogger.i("SyncManager", "Sync types — caves=$syncCaves springs=$syncSprings artificials=$syncArtificials")
 
         return try {
-            var total = 0
-            // Always probe with the caves CSV to detect server type.
-            // If syncCaves=true, the content is used directly (no second download).
-            // If syncCaves=false, we probe but discard the content.
-            val probeResult = devSiteApi.fetchCsvOrNull(serverUrl, "cavita-naturali")
-            val isDevSite = probeResult != null
-            debugLogger.i("SyncManager", "Routing: ${if (isDevSite) "dev-site CSV" else "legacy JSON"}")
-
-            if (isDevSite) {
-                if (syncCaves) total += repository.syncCavesFromDevSiteContent(serverUrl, probeResult!!)
-                if (syncSprings) total += repository.syncSpringsFromDevSite(serverUrl)
-                if (syncArtificials) total += repository.syncArtificialsFromDevSite(serverUrl)
-            } else {
-                if (syncCaves) total += repository.syncCaves(serverUrl)
-                if (syncSprings) total += repository.syncSprings(serverUrl)
-                if (syncArtificials) total += repository.syncArtificials(serverUrl)
+            val total = try {
+                syncNormally(
+                    serverUrl = serverUrl,
+                    syncCaves = syncCaves,
+                    syncSprings = syncSprings,
+                    syncArtificials = syncArtificials
+                )
+            } catch (e: Exception) {
+                if (isCloudflareChallenge(e) && cloudflareWebViewFetcher.supports(serverUrl)) {
+                    debugLogger.w(
+                        "SyncManager",
+                        "Cloudflare challenge detected; switching to Android WebView browser session"
+                    )
+                    syncViaCloudflareWebView(
+                        serverUrl = serverUrl,
+                        syncCaves = syncCaves,
+                        syncSprings = syncSprings,
+                        syncArtificials = syncArtificials
+                    )
+                } else {
+                    throw e
+                }
             }
 
             debugLogger.i("SyncManager", "Sync complete: $total items from $serverUrl")
@@ -126,6 +136,118 @@ class SyncManager @Inject constructor(
             debugLogger.e("SyncManager", "Sync error for $serverUrl: ${e.message}")
             SyncResult.Error(e.message ?: "Unknown error")
         }
+    }
+
+    private suspend fun syncNormally(
+        serverUrl: String,
+        syncCaves: Boolean,
+        syncSprings: Boolean,
+        syncArtificials: Boolean
+    ): Int {
+        var total = 0
+
+        // Probe the CSV route first. A Cloudflare challenge is deliberately rethrown by
+        // DevSiteApi so syncServer can switch to the browser-session fallback.
+        val probeResult = devSiteApi.fetchCsvOrNull(serverUrl, "cavita-naturali")
+        val isDevSite = probeResult != null
+        debugLogger.i(
+            "SyncManager",
+            "Routing: ${if (isDevSite) "dev-site CSV" else "legacy JSON"}"
+        )
+
+        if (isDevSite) {
+            if (syncCaves) {
+                total += repository.syncCavesFromDevSiteContent(serverUrl, probeResult!!)
+            }
+            if (syncSprings) total += repository.syncSpringsFromDevSite(serverUrl)
+            if (syncArtificials) total += repository.syncArtificialsFromDevSite(serverUrl)
+        } else {
+            if (syncCaves) total += repository.syncCaves(serverUrl)
+            if (syncSprings) total += repository.syncSprings(serverUrl)
+            if (syncArtificials) total += repository.syncArtificials(serverUrl)
+        }
+
+        return total
+    }
+
+    private suspend fun syncViaCloudflareWebView(
+        serverUrl: String,
+        syncCaves: Boolean,
+        syncSprings: Boolean,
+        syncArtificials: Boolean
+    ): Int {
+        val baseUrl = serverUrl.trimEnd('/')
+        val isDevSite = baseUrl == DEV_SERVER_URL
+
+        val caveUrl = if (isDevSite) {
+            "$baseUrl/export/cavita-naturali/csv"
+        } else {
+            "$baseUrl/openkis_json.php?mod=caves"
+        }
+        val springUrl = if (isDevSite) {
+            "$baseUrl/export/sorgenti/csv"
+        } else {
+            "$baseUrl/openkis_json.php?mod=springs"
+        }
+        val artificialUrl = if (isDevSite) {
+            "$baseUrl/export/cavita-artificiali/csv"
+        } else {
+            "$baseUrl/openkis_json.php?mod=artificials"
+        }
+
+        val urls = buildList {
+            if (syncCaves) add(caveUrl)
+            if (syncSprings) add(springUrl)
+            if (syncArtificials) add(artificialUrl)
+        }
+        if (urls.isEmpty()) return 0
+
+        val content = cloudflareWebViewFetcher.fetchAll(baseUrl, urls)
+        var total = 0
+
+        if (syncCaves) {
+            val body = content[caveUrl] ?: error("Missing caves response from WebView")
+            total += if (isDevSite) {
+                repository.syncCavesFromDevSiteContent(serverUrl, body)
+            } else {
+                repository.syncCavesFromLegacyContent(serverUrl, body)
+            }
+        }
+
+        if (syncSprings) {
+            val body = content[springUrl] ?: error("Missing springs response from WebView")
+            total += if (isDevSite) {
+                repository.syncSpringsFromDevSiteContent(serverUrl, body)
+            } else {
+                repository.syncSpringsFromLegacyContent(serverUrl, body)
+            }
+        }
+
+        if (syncArtificials) {
+            val body = content[artificialUrl] ?: error("Missing artificials response from WebView")
+            total += if (isDevSite) {
+                repository.syncArtificialsFromDevSiteContent(serverUrl, body)
+            } else {
+                repository.syncArtificialsFromLegacyContent(serverUrl, body)
+            }
+        }
+
+        debugLogger.i(
+            "SyncManager",
+            "Browser-session fallback returned $total items from $serverUrl"
+        )
+        return total
+    }
+
+    private fun isCloudflareChallenge(error: Throwable): Boolean {
+        if (error is CloudflareChallengeException) return true
+        if (error is HttpException && error.code() == 403) {
+            return error.response()
+                ?.headers()
+                ?.get("cf-mitigated")
+                .equals("challenge", ignoreCase = true)
+        }
+        return false
     }
 
     suspend fun syncAll(): SyncResult {

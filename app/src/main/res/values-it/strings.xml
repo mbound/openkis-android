@@ -280,4 +280,13 @@
     <string name="map_search_objects">Oggetti</string>
     <string name="map_search_no_places">Nessun luogo corrispondente trovato.</string>
     <string name="map_search_place_error">La ricerca dei luoghi non è disponibile su questo dispositivo.</string>
+    <string name="cloudflare_opening">Apertura verifica del server Piemonte…</string>
+    <string name="cloudflare_checking">Verifica Cloudflare in corso…</string>
+    <string name="cloudflare_required">È richiesta la verifica Cloudflare. Completa l’eventuale controllo mostrato qui sotto; la sincronizzazione continuerà automaticamente.</string>
+    <string name="cloudflare_preparing">Verifica superata. Preparazione della sessione API…</string>
+    <string name="cloudflare_returning">Ritorno al server Piemonte…</string>
+    <string name="cloudflare_fetching">Verifica superata. Download dei dati API nella sessione browser…</string>
+    <string name="cloudflare_fetch_progress">Download %1$d di %2$d…</string>
+    <string name="cloudflare_endpoint_challenged">Cloudflare ha richiesto una verifica per questa richiesta API. Completa il controllo qui sotto; il tentativo verrà ripetuto automaticamente.</string>
+    <string name="cloudflare_complete">Verifica browser completata. Finalizzazione della sincronizzazione…</string>
 </resources>

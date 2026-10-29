@@ -291,4 +291,13 @@
     <string name="map_search_objects">Objects</string>
     <string name="map_search_no_places">No matching places found.</string>
     <string name="map_search_place_error">Place search is unavailable on this device.</string>
+    <string name="cloudflare_opening">Opening Piemonte server verification…</string>
+    <string name="cloudflare_checking">Checking Cloudflare verification…</string>
+    <string name="cloudflare_required">Cloudflare verification is required. Complete any check shown below; synchronization will continue automatically.</string>
+    <string name="cloudflare_preparing">Verification passed. Preparing API session…</string>
+    <string name="cloudflare_returning">Returning to Piemonte server…</string>
+    <string name="cloudflare_fetching">Verification passed. Fetching API data in the browser session…</string>
+    <string name="cloudflare_fetch_progress">Fetching %1$d of %2$d…</string>
+    <string name="cloudflare_endpoint_challenged">Cloudflare challenged this API request. Complete verification below; it will retry automatically.</string>
+    <string name="cloudflare_complete">Browser verification complete. Finishing synchronization…</string>
 </resources>
