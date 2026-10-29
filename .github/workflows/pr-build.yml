@@ -43,8 +43,7 @@ jobs:
           ]
 
           opts = Options()
-          opts.add_argument("--headless=new")
-          opts.add_argument("--no-sandbox")
+                    opts.add_argument("--no-sandbox")
           opts.add_argument("--disable-dev-shm-usage")
           opts.add_argument("--disable-gpu")
           opts.add_argument("--window-size=1200,900")
@@ -59,8 +58,11 @@ jobs:
                       title = driver.title
                       current = driver.current_url
                       src = driver.page_source[:500].replace("\n", " ")
+                      body = driver.execute_script("return document.body ? document.body.innerText.slice(0,500) : ''")
+                      frames = driver.execute_script("return Array.from(document.querySelectorAll('iframe')).map(x => x.src)")
                       cookies = [c.get("name") for c in driver.get_cookies()]
                       print("t", (i+1)*2, "title=", repr(title), "url=", current, "cookies=", cookies)
+                      print("body=", repr(body), "iframes=", frames)
                       if "Just a moment" not in title and "challenges.cloudflare.com" not in current:
                           break
                   result = driver.execute_async_script("""
@@ -79,5 +81,6 @@ jobs:
           finally:
               driver.quit()
           PY
-          python3 /tmp/cf_browser_test.py
+          echo "=== headed Chrome under Xvfb ==="
+          xvfb-run -a python3 /tmp/cf_browser_test.py
 
