@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,15 +69,19 @@ fun MapSearchDialog(
     var placeError by remember { mutableStateOf<String?>(null) }
     var geocoding by remember { mutableStateOf(false) }
 
-    val localResults = remember(query, objects) {
+    var localResults by remember { mutableStateOf<List<MapSearchObject>>(emptyList()) }
+
+    LaunchedEffect(query, objects) {
         val q = query.trim()
-        if (q.length < 2) {
+        localResults = if (q.length < 2) {
             emptyList()
         } else {
-            objects.asSequence()
-                .filter { it.searchText.contains(q, ignoreCase = true) }
-                .take(10)
-                .toList()
+            withContext(Dispatchers.Default) {
+                objects.asSequence()
+                    .filter { it.searchText.contains(q, ignoreCase = true) }
+                    .take(12)
+                    .toList()
+            }
         }
     }
 
@@ -172,10 +177,7 @@ fun MapSearchDialog(
                         .fillMaxWidth()
                         .heightIn(max = 300.dp)
                 ) {
-                    items(
-                        localResults,
-                        key = { "object_${it.type}_${it.code}" }
-                    ) { item ->
+                    items(localResults) { item ->
                         ListItem(
                             headlineContent = {
                                 Text(item.name.ifBlank { item.code })
@@ -203,10 +205,7 @@ fun MapSearchDialog(
                         }
                     }
 
-                    items(
-                        placeResults,
-                        key = { "place_${it.latitude}_${it.longitude}_${it.label}" }
-                    ) { place ->
+                    items(placeResults) { place ->
                         ListItem(
                             headlineContent = { Text(place.label) },
                             leadingContent = {

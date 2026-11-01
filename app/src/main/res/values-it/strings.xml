@@ -269,7 +269,7 @@
     <string name="apply">Applica</string>
     <string name="clear">Cancella</string>
     <string name="filter_measurements_title">Filtri dimensionali</string>
-    <string name="filter_measurements_desc">Combina liberamente le soglie. Gli oggetti senza una misura richiesta vengono esclusi.</string>
+    <string name="filter_measurements_desc">La profondità usa il valore assoluto. Un valore mancante o non leggibile non soddisfa quel criterio: con AND l’oggetto è escluso; con OR può soddisfare un altro criterio.</string>
     <string name="filter_min_depth">Profondità minima</string>
     <string name="filter_min_length">Lunghezza minima</string>
     <string name="filter_min_elevation">Quota minima</string>
@@ -289,4 +289,7 @@
     <string name="cloudflare_fetch_progress">Download %1$d di %2$d…</string>
     <string name="cloudflare_endpoint_challenged">Cloudflare ha richiesto una verifica per questa richiesta API. Completa il controllo qui sotto; il tentativo verrà ripetuto automaticamente.</string>
     <string name="cloudflare_complete">Verifica browser completata. Finalizzazione della sincronizzazione…</string>
+    <string name="filter_match_mode">Combina i filtri</string>
+    <string name="filter_match_all">Soddisfa tutti i filtri attivi (AND)</string>
+    <string name="filter_match_any">Soddisfa almeno un filtro attivo (OR)</string>
 </resources>

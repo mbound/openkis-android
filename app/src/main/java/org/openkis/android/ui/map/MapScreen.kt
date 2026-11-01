@@ -1,8 +1,6 @@
 package org.openkis.android.ui.map
 
 import android.Manifest
-import android.graphics.PorterDuff
-import android.graphics.drawable.Drawable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -55,7 +53,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -71,7 +68,6 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -93,7 +89,65 @@ fun MapScreen(
     var locationEnabled by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val locationOverlayRef = remember { mutableStateOf<MyLocationNewOverlay?>(null) }
-    val labelOverlay = remember { MapObjectLabelOverlay(minZoom = 15.0) }
+    val objectOverlay = remember(viewModel.compositor) {
+        MapObjectOverlay(viewModel.compositor) { type, code ->
+            viewModel.selectMarker(type, code)
+        }
+    }
+
+    val renderPoints = remember(
+        caves,
+        springs,
+        artificials,
+        uiState.showCaves,
+        uiState.showSprings,
+        uiState.showArtificials
+    ) {
+        buildList {
+            if (uiState.showCaves) {
+                caves.forEach {
+                    add(
+                        MapRenderPoint(
+                            type = "caves",
+                            code = it.code,
+                            name = it.name,
+                            position = GeoPoint(it.latitude, it.longitude),
+                            iconCategory = "caves",
+                            iconLayers = MarkerIconResolver.caveIconLayers(it)
+                        )
+                    )
+                }
+            }
+            if (uiState.showSprings) {
+                springs.forEach {
+                    add(
+                        MapRenderPoint(
+                            type = "springs",
+                            code = it.code,
+                            name = it.name,
+                            position = GeoPoint(it.latitude, it.longitude),
+                            iconCategory = "springs",
+                            iconLayers = MarkerIconResolver.springIconLayers(it)
+                        )
+                    )
+                }
+            }
+            if (uiState.showArtificials) {
+                artificials.forEach {
+                    add(
+                        MapRenderPoint(
+                            type = "artificials",
+                            code = it.code,
+                            name = it.name,
+                            position = GeoPoint(it.latitude, it.longitude),
+                            iconCategory = "artificials",
+                            iconLayers = MarkerIconResolver.artificialIconLayers(it)
+                        )
+                    )
+                }
+            }
+        }.distinctBy { it.type to it.code }
+    }
 
     val searchableObjects = remember(caves, springs, artificials, uiState.showCaves, uiState.showSprings, uiState.showArtificials) {
         buildList {
@@ -145,9 +199,8 @@ fun MapScreen(
                     )
                 }
             }
-        }
+        }.distinctBy { it.type to it.code }
     }
-
     Configuration.getInstance().userAgentValue = context.packageName
 
     if (showSearch) {
@@ -249,6 +302,7 @@ fun MapScreen(
                     val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), this)
                     locationOverlayRef.value = locationOverlay
                     overlays.add(locationOverlay)
+                    overlays.add(objectOverlay)
 
                     mapViewRef.value = this
 
@@ -280,123 +334,9 @@ fun MapScreen(
                 }
             },
             update = { mapView ->
-                // Preserve the location overlay, clear everything else
-                val locationOverlay = locationOverlayRef.value
-                mapView.overlays.clear()
-                if (locationOverlay != null) {
-                    mapView.overlays.add(locationOverlay)
-                }
-
-                val selectedArgb = Color(0xFFFFD54F).toArgb()
-                val compositor = viewModel.compositor
-
-                fun markerIcon(category: String, layers: List<String>, selected: Boolean): Drawable {
-                    val d = compositor.compose(category, layers)
-                    if (selected) d.setColorFilter(selectedArgb, PorterDuff.Mode.SRC_ATOP)
-                    return d
-                }
-
-                // Add cave markers
-                if (uiState.showCaves) {
-                    for (cave in caves) {
-                        val isSelected = uiState.selectedType == "caves" && uiState.selectedCode == cave.code
-                        val marker = Marker(mapView).apply {
-                            position = GeoPoint(cave.latitude, cave.longitude)
-                            title = "${cave.code} - ${cave.name}"
-                            snippet = buildString {
-                                append("Q.${cave.elevation} ")
-                                append("SV.${cave.lengthTotal} ")
-                                append("P.${cave.depthTotal}")
-                            }
-                            icon = markerIcon("caves", MarkerIconResolver.caveIconLayers(cave), isSelected)
-                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                            setOnMarkerClickListener { _, _ ->
-                                viewModel.selectMarker("caves", cave.code)
-                                true
-                            }
-                        }
-                        mapView.overlays.add(marker)
-                    }
-                }
-
-                // Add spring markers
-                if (uiState.showSprings) {
-                    for (spring in springs) {
-                        val isSelected = uiState.selectedType == "springs" && uiState.selectedCode == spring.code
-                        val marker = Marker(mapView).apply {
-                            position = GeoPoint(spring.latitude, spring.longitude)
-                            title = "${spring.code} - ${spring.name}"
-                            snippet = "Q.${spring.elevation}"
-                            icon = markerIcon("springs", MarkerIconResolver.springIconLayers(spring), isSelected)
-                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                            setOnMarkerClickListener { _, _ ->
-                                viewModel.selectMarker("springs", spring.code)
-                                true
-                            }
-                        }
-                        mapView.overlays.add(marker)
-                    }
-                }
-
-                // Add artificial markers
-                if (uiState.showArtificials) {
-                    for (art in artificials) {
-                        val isSelected = uiState.selectedType == "artificials" && uiState.selectedCode == art.code
-                        val marker = Marker(mapView).apply {
-                            position = GeoPoint(art.latitude, art.longitude)
-                            title = "${art.code} - ${art.name}"
-                            snippet = buildString {
-                                append("Q.${art.elevation} ")
-                                append("SV.${art.lengthTotal} ")
-                                append("P.${art.depthTotal}")
-                            }
-                            icon = markerIcon("artificials", MarkerIconResolver.artificialIconLayers(art), isSelected)
-                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                            setOnMarkerClickListener { _, _ ->
-                                viewModel.selectMarker("artificials", art.code)
-                                true
-                            }
-                        }
-                        mapView.overlays.add(marker)
-                    }
-                }
-
-                labelOverlay.points = buildList {
-                    if (uiState.showCaves) {
-                        caves.forEach {
-                            add(
-                                MapLabelPoint(
-                                    it.latitude,
-                                    it.longitude,
-                                    it.name.ifBlank { it.code }
-                                )
-                            )
-                        }
-                    }
-                    if (uiState.showSprings) {
-                        springs.forEach {
-                            add(
-                                MapLabelPoint(
-                                    it.latitude,
-                                    it.longitude,
-                                    it.name.ifBlank { it.code }
-                                )
-                            )
-                        }
-                    }
-                    if (uiState.showArtificials) {
-                        artificials.forEach {
-                            add(
-                                MapLabelPoint(
-                                    it.latitude,
-                                    it.longitude,
-                                    it.name.ifBlank { it.code }
-                                )
-                            )
-                        }
-                    }
-                }
-                mapView.overlays.add(labelOverlay)
+                objectOverlay.points = renderPoints
+                objectOverlay.selectedType = uiState.selectedType
+                objectOverlay.selectedCode = uiState.selectedCode
 
                 // Auto-zoom to fit all markers on first data load
                 if (!hasZoomedToFit) {
