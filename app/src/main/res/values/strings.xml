@@ -300,4 +300,7 @@
     <string name="cloudflare_fetch_progress">Fetching %1$d of %2$d…</string>
     <string name="cloudflare_endpoint_challenged">Cloudflare challenged this API request. Complete verification below; it will retry automatically.</string>
     <string name="cloudflare_complete">Browser verification complete. Finishing synchronization…</string>
+    <string name="filter_match_mode">Combine filters</string>
+    <string name="filter_match_all">Match all active filters (AND)</string>
+    <string name="filter_match_any">Match any active filter (OR)</string>
 </resources>
