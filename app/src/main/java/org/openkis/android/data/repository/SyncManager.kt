@@ -152,10 +152,10 @@ class SyncManager @Inject constructor(
         val isDevSite = probeResult != null
         debugLogger.i(
             "SyncManager",
-            "Routing: ${if (isDevSite) "dev-site CSV" else "legacy JSON"}"
+            "Routing: ${if (isDevSite) "CSV export" else "legacy JSON"}"
         )
 
-        if (isDevSite) {
+        if (isCsvBackend) {
             if (syncCaves) {
                 total += repository.syncCavesFromDevSiteContent(serverUrl, probeResult!!)
             }
@@ -177,19 +177,20 @@ class SyncManager @Inject constructor(
         syncArtificials: Boolean
     ): Int {
         val baseUrl = serverUrl.trimEnd('/')
-        val isDevSite = baseUrl == DEV_SERVER_URL
+        // Production and dev Piemonte now run the same CSV-export backend.
+        val isCsvBackend = baseUrl == DEFAULT_SERVER_URL || baseUrl == DEV_SERVER_URL
 
-        val caveUrl = if (isDevSite) {
+        val caveUrl = if (isCsvBackend) {
             "$baseUrl/export/cavita-naturali/csv"
         } else {
             "$baseUrl/openkis_json.php?mod=caves"
         }
-        val springUrl = if (isDevSite) {
+        val springUrl = if (isCsvBackend) {
             "$baseUrl/export/sorgenti/csv"
         } else {
             "$baseUrl/openkis_json.php?mod=springs"
         }
-        val artificialUrl = if (isDevSite) {
+        val artificialUrl = if (isCsvBackend) {
             "$baseUrl/export/cavita-artificiali/csv"
         } else {
             "$baseUrl/openkis_json.php?mod=artificials"
@@ -207,7 +208,7 @@ class SyncManager @Inject constructor(
 
         if (syncCaves) {
             val body = content[caveUrl] ?: error("Missing caves response from WebView")
-            total += if (isDevSite) {
+            total += if (isCsvBackend) {
                 repository.syncCavesFromDevSiteContent(serverUrl, body)
             } else {
                 repository.syncCavesFromLegacyContent(serverUrl, body)
@@ -216,7 +217,7 @@ class SyncManager @Inject constructor(
 
         if (syncSprings) {
             val body = content[springUrl] ?: error("Missing springs response from WebView")
-            total += if (isDevSite) {
+            total += if (isCsvBackend) {
                 repository.syncSpringsFromDevSiteContent(serverUrl, body)
             } else {
                 repository.syncSpringsFromLegacyContent(serverUrl, body)
@@ -225,7 +226,7 @@ class SyncManager @Inject constructor(
 
         if (syncArtificials) {
             val body = content[artificialUrl] ?: error("Missing artificials response from WebView")
-            total += if (isDevSite) {
+            total += if (isCsvBackend) {
                 repository.syncArtificialsFromDevSiteContent(serverUrl, body)
             } else {
                 repository.syncArtificialsFromLegacyContent(serverUrl, body)
