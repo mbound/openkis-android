@@ -146,7 +146,7 @@ fun MapScreen(
                     )
                 }
             }
-        }
+        }.distinctBy { it.type to it.code }
     }
 
     val searchableObjects = remember(caves, springs, artificials, uiState.showCaves, uiState.showSprings, uiState.showArtificials) {
@@ -199,9 +199,8 @@ fun MapScreen(
                     )
                 }
             }
-        }
+        }.distinctBy { it.type to it.code }
     }
-
     Configuration.getInstance().userAgentValue = context.packageName
 
     if (showSearch) {
