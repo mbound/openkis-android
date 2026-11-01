@@ -8,52 +8,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Probe Liguria public and API endpoints
+      - name: Probe Liguria entity endpoints
         shell: bash
         run: |
           set +e
           base="https://www.catastogrotte.net/liguria"
-          for path in             "/it/caves/"             "/index.php?mod=caves"             "/openkis_json.php?mod=caves"             "/openkis_API.php?mod=caves"             "/openkis_kml.php?mod=caves"; do
-            url="$base$path"
-            echo "===== $url ====="
-            curl -sS -L --max-time 45 -D /tmp/h -o /tmp/b "$url"
-            awk 'toupper($1) ~ /^HTTP\// {code=$2} END {print "HTTP", code}' /tmp/h
-            grep -iE '^(content-type|location|server|set-cookie):' /tmp/h | tail -20 || true
-            echo "BODY PREFIX:"
-            head -c 500 /tmp/b | tr '\n' ' '; echo
-            echo
-          done
-
-          echo "===== export links from public caves page ====="
-          curl -sS -L --max-time 45 "$base/it/caves/" -o /tmp/caves.html
-          grep -oiE 'href=["'"'"'][^"'"'"']*(csv|export)[^"'"'"']*["'"'"']' /tmp/caves.html | head -30 || true
-          grep -niE 'CSV|export' /tmp/caves.html | tail -40 || true
-
-          echo "===== JSON/API shape ====="
-          for path in "/openkis_json.php?mod=caves" "/openkis_API.php?mod=caves"; do
-            url="$base$path"
-            curl -sS -L --max-time 60 "$url" -o /tmp/data.json
-            echo "--- $path bytes=$(wc -c < /tmp/data.json)"
-            python3 - <<'PY'
+          for mod in caves springs artificials; do
+            for api in openkis_json.php openkis_API.php; do
+              url="$base/$api?mod=$mod"
+              echo "===== $url ====="
+              code=$(curl -sS -L --max-time 60 -o /tmp/body -w "%{http_code}" "$url")
+              echo "HTTP $code bytes=$(wc -c < /tmp/body)"
+              head -c 220 /tmp/body | tr '\n' ' '; echo
+              if [ "$code" = "200" ]; then
+                python3 - <<'PY'
 import json
-p="/tmp/data.json"
-raw=open(p,"rb").read()
-print("prefix",repr(raw[:180]))
+raw=open("/tmp/body","rb").read()
 try:
     d=json.loads(raw)
+    print("json_type", type(d).__name__)
     if isinstance(d,dict):
-        print("keys",list(d)[:20],"items",len(d.get("items",[])) if isinstance(d.get("items"),list) else None,"count",d.get("count"))
-        if isinstance(d.get("items"),list) and d["items"]:
-            print("first_keys",list(d["items"][0])[:30])
-    else:
-        print("json_type",type(d).__name__)
+        items=d.get("items")
+        print("keys", list(d)[:12], "items", len(items) if isinstance(items,list) else None, "count", d.get("count"))
+        if isinstance(items,list) and items:
+            print("first_keys", list(items[0])[:30])
 except Exception as e:
-    print("json_error",repr(e))
+    print("json_error", repr(e))
 PY
+              fi
+            done
           done
 
-          echo "===== public CSV export ====="
-          curl -sS -L --max-time 60 "$base/it/caves/?export=1" -D /tmp/csvh -o /tmp/caves.csv
-          grep -iE '^(content-type|content-disposition):' /tmp/csvh | tail -10 || true
-          echo "bytes=$(wc -c < /tmp/caves.csv) lines=$(wc -l < /tmp/caves.csv)"
-          head -3 /tmp/caves.csv | cut -c1-700
+          echo "===== public caves CSV ====="
+          code=$(curl -sS -L --max-time 60 -D /tmp/h -o /tmp/csv -w "%{http_code}" "$base/it/caves/?export=1")
+          echo "HTTP $code bytes=$(wc -c < /tmp/csv) lines=$(wc -l < /tmp/csv)"
+          grep -iE '^(content-type|content-disposition):' /tmp/h | tail -10 || true
+          head -3 /tmp/csv | cut -c1-900
