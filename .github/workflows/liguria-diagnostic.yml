@@ -28,3 +28,32 @@ jobs:
           curl -sS -L --max-time 45 "$base/it/caves/" -o /tmp/caves.html
           grep -oiE 'href=["'"'"'][^"'"'"']*(csv|export)[^"'"'"']*["'"'"']' /tmp/caves.html | head -30 || true
           grep -niE 'CSV|export' /tmp/caves.html | tail -40 || true
+
+          echo "===== JSON/API shape ====="
+          for path in "/openkis_json.php?mod=caves" "/openkis_API.php?mod=caves"; do
+            url="$base$path"
+            curl -sS -L --max-time 60 "$url" -o /tmp/data.json
+            echo "--- $path bytes=$(wc -c < /tmp/data.json)"
+            python3 - <<'PY'
+import json
+p="/tmp/data.json"
+raw=open(p,"rb").read()
+print("prefix",repr(raw[:180]))
+try:
+    d=json.loads(raw)
+    if isinstance(d,dict):
+        print("keys",list(d)[:20],"items",len(d.get("items",[])) if isinstance(d.get("items"),list) else None,"count",d.get("count"))
+        if isinstance(d.get("items"),list) and d["items"]:
+            print("first_keys",list(d["items"][0])[:30])
+    else:
+        print("json_type",type(d).__name__)
+except Exception as e:
+    print("json_error",repr(e))
+PY
+          done
+
+          echo "===== public CSV export ====="
+          curl -sS -L --max-time 60 "$base/it/caves/?export=1" -D /tmp/csvh -o /tmp/caves.csv
+          grep -iE '^(content-type|content-disposition):' /tmp/csvh | tail -10 || true
+          echo "bytes=$(wc -c < /tmp/caves.csv) lines=$(wc -l < /tmp/caves.csv)"
+          head -3 /tmp/caves.csv | cut -c1-700
