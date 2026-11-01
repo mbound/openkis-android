@@ -280,7 +280,7 @@
     <string name="apply">Apply</string>
     <string name="clear">Clear</string>
     <string name="filter_measurements_title">Measurement filters</string>
-    <string name="filter_measurements_desc">Combine any thresholds below. Objects without a required measurement are excluded.</string>
+    <string name="filter_measurements_desc">Combine any thresholds below. Depth uses absolute value. Objects with a missing or unreadable required measurement are excluded.</string>
     <string name="filter_min_depth">Minimum depth</string>
     <string name="filter_min_length">Minimum length</string>
     <string name="filter_min_elevation">Minimum elevation</string>
