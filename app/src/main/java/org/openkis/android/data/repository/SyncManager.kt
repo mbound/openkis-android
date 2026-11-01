@@ -162,12 +162,48 @@ class SyncManager @Inject constructor(
             if (syncSprings) total += repository.syncSpringsFromDevSite(serverUrl)
             if (syncArtificials) total += repository.syncArtificialsFromDevSite(serverUrl)
         } else {
-            if (syncCaves) total += repository.syncCaves(serverUrl)
-            if (syncSprings) total += repository.syncSprings(serverUrl)
-            if (syncArtificials) total += repository.syncArtificials(serverUrl)
+            if (syncCaves) {
+                total += syncLegacyEntity(serverUrl, "caves") {
+                    repository.syncCaves(serverUrl)
+                }
+            }
+            if (syncSprings) {
+                total += syncLegacyEntity(serverUrl, "springs") {
+                    repository.syncSprings(serverUrl)
+                }
+            }
+            if (syncArtificials) {
+                total += syncLegacyEntity(serverUrl, "artificials") {
+                    repository.syncArtificials(serverUrl)
+                }
+            }
         }
 
         return total
+    }
+
+    private suspend fun syncLegacyEntity(
+        serverUrl: String,
+        entityType: String,
+        sync: suspend () -> Int
+    ): Int {
+        return try {
+            sync()
+        } catch (e: HttpException) {
+            if (e.code() == 403 && !isCloudflareChallenge(e)) {
+                // Upstream OpenKIS now applies section access rules to data
+                // exports. A server may expose caves publicly while keeping
+                // springs or another section restricted. Do not fail the whole
+                // server sync for an entity type the anonymous user cannot see.
+                debugLogger.w(
+                    "SyncManager",
+                    "Skipping $entityType from $serverUrl: HTTP 403 (section not publicly accessible)"
+                )
+                0
+            } else {
+                throw e
+            }
+        }
     }
 
     private suspend fun syncViaCloudflareWebView(
