@@ -303,8 +303,28 @@ private fun Map<String, String>.csvValue(vararg aliases: String): String {
         get(alias)?.takeIf { it.isNotBlank() }?.let { return it }
     }
 
-    val wanted = aliases.map(::normalizeCsvFieldName).toSet()
+    val wanted = aliases
+        .map(::normalizeCsvFieldName)
+        .filter { it.isNotBlank() }
+        .toSet()
+
+    // First prefer exact normalized matches.
     entries.firstOrNull { normalizeCsvFieldName(it.key) in wanted }
+        ?.value
+        ?.takeIf { it.isNotBlank() }
+        ?.let { return it }
+
+    // Export labels may include units or explanatory suffixes, e.g.
+    // "Sviluppo totale [m]" or "Dislivello totale (m)".
+    // After normalization these become "sviluppototalem" etc.; accept
+    // a known alias as the leading field name, but avoid very short
+    // aliases such as "id", "lat" or "lon" to limit false matches.
+    entries.firstOrNull { entry ->
+        val header = normalizeCsvFieldName(entry.key)
+        wanted.any { alias ->
+            alias.length >= 5 && header.startsWith(alias)
+        }
+    }
         ?.value
         ?.takeIf { it.isNotBlank() }
         ?.let { return it }
