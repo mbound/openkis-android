@@ -149,10 +149,10 @@ class SyncManager @Inject constructor(
         // Probe the CSV route first. A Cloudflare challenge is deliberately rethrown by
         // DevSiteApi so syncServer can switch to the browser-session fallback.
         val probeResult = devSiteApi.fetchCsvOrNull(serverUrl, "cavita-naturali")
-        val isDevSite = probeResult != null
+        val isCsvBackend = probeResult != null
         debugLogger.i(
             "SyncManager",
-            "Routing: ${if (isDevSite) "CSV export" else "legacy JSON"}"
+            "Routing: ${if (isCsvBackend) "CSV export" else "legacy JSON"}"
         )
 
         if (isCsvBackend) {
