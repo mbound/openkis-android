@@ -15,8 +15,8 @@ android {
         applicationId = "org.openkis.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 34
-        versionName = "1.3.12"
+        versionCode = 35
+        versionName = "1.3.13"
     }
 
     signingConfigs {
