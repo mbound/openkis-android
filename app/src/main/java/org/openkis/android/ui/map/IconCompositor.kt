@@ -19,15 +19,20 @@ class IconCompositor @Inject constructor(
     private val cache = LruCache<String, Bitmap>(64)
 
     /**
-     * Returns a fresh BitmapDrawable wrapping the composited icon for [category]/[layers].
-     * A new wrapper is returned each call so callers can safely apply per-marker ColorFilters
-     * (e.g. amber selection tint) without affecting other markers that share the same bitmap.
+     * Returns the cached composited bitmap for [category]/[layers].
+     * The map canvas overlay uses this directly so thousands of marker wrapper
+     * objects do not need to be allocated.
      */
-    fun compose(category: String, layers: List<String>): BitmapDrawable {
+    fun bitmap(category: String, layers: List<String>): Bitmap {
         val key = "$category:${layers.joinToString(",")}"
-        val bitmap = cache[key] ?: buildBitmap(category, layers).also { cache.put(key, it) }
-        return BitmapDrawable(context.resources, bitmap)
+        return cache[key] ?: buildBitmap(category, layers).also { cache.put(key, it) }
     }
+
+    /**
+     * Returns a fresh BitmapDrawable wrapper for UI surfaces that need a Drawable.
+     */
+    fun compose(category: String, layers: List<String>): BitmapDrawable =
+        BitmapDrawable(context.resources, bitmap(category, layers))
 
     private fun buildBitmap(category: String, layers: List<String>): Bitmap {
         val result = Bitmap.createBitmap(iconSizePx, iconSizePx, Bitmap.Config.ARGB_8888)
