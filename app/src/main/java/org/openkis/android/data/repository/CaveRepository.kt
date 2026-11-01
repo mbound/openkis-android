@@ -6,6 +6,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import org.openkis.android.data.debug.DebugLogger
 import org.openkis.android.data.local.dao.ArtificialDao
 import org.openkis.android.data.local.dao.CaveDao
 import org.openkis.android.data.local.dao.SpringDao
@@ -22,6 +23,7 @@ import org.openkis.android.data.remote.OpenKisApi
 import org.openkis.android.data.remote.SurveyFetcher
 import org.openkis.android.data.remote.dto.OpenKisItem
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,6 +38,7 @@ class CaveRepository @Inject constructor(
     private val surveyAnnotationDao: SurveyAnnotationDao,
     private val surveyFetcher: SurveyFetcher,
     private val json: Json,
+    private val debugLogger: DebugLogger,
     @ApplicationContext private val context: Context
 ) {
     // Caves
@@ -112,52 +115,93 @@ class CaveRepository @Inject constructor(
         return entities.size
     }
 
-    // --- Dev-site CSV sync (new format: /export/{entity}/csv) ---
+    // --- Piemonte CSV sync (/export/{entity}/csv) ---
 
-    suspend fun syncCavesFromDevSite(serverUrl: String): Int {
-        val rows = CsvParser.parse(devSiteApi.fetchCsv(serverUrl, "cavita-naturali"))
-        val entities = rows.mapNotNull { it.toCaveEntity(serverUrl) }
-        caveDao.deleteByServerUrl(serverUrl)
-        caveDao.insertAll(entities)
-        return entities.size
-    }
+    suspend fun syncCavesFromDevSite(serverUrl: String): Int =
+        syncCavesFromDevSiteContent(
+            serverUrl,
+            devSiteApi.fetchCsv(serverUrl, "cavita-naturali")
+        )
 
     suspend fun syncCavesFromDevSiteContent(serverUrl: String, csvContent: String): Int {
-        val rows = CsvParser.parse(csvContent)
-        val entities = rows.mapNotNull { it.toCaveEntity(serverUrl) }
+        val entities = parseCsvEntities("caves", csvContent) { row ->
+            row.toCaveEntity(serverUrl)
+        }
         caveDao.deleteByServerUrl(serverUrl)
         caveDao.insertAll(entities)
         return entities.size
     }
 
-    suspend fun syncSpringsFromDevSite(serverUrl: String): Int {
-        return syncSpringsFromDevSiteContent(
+    suspend fun syncSpringsFromDevSite(serverUrl: String): Int =
+        syncSpringsFromDevSiteContent(
             serverUrl,
             devSiteApi.fetchCsv(serverUrl, "sorgenti")
         )
-    }
 
     suspend fun syncSpringsFromDevSiteContent(serverUrl: String, csvContent: String): Int {
-        val rows = CsvParser.parse(csvContent)
-        val entities = rows.mapNotNull { it.toSpringEntity(serverUrl) }
+        val entities = parseCsvEntities("springs", csvContent) { row ->
+            row.toSpringEntity(serverUrl)
+        }
         springDao.deleteByServerUrl(serverUrl)
         springDao.insertAll(entities)
         return entities.size
     }
 
-    suspend fun syncArtificialsFromDevSite(serverUrl: String): Int {
-        return syncArtificialsFromDevSiteContent(
+    suspend fun syncArtificialsFromDevSite(serverUrl: String): Int =
+        syncArtificialsFromDevSiteContent(
             serverUrl,
             devSiteApi.fetchCsv(serverUrl, "cavita-artificiali")
         )
-    }
 
     suspend fun syncArtificialsFromDevSiteContent(serverUrl: String, csvContent: String): Int {
-        val rows = CsvParser.parse(csvContent)
-        val entities = rows.mapNotNull { it.toArtificialEntityFromDevSite(serverUrl) }
+        val entities = parseCsvEntities("artificials", csvContent) { row ->
+            row.toArtificialEntityFromDevSite(serverUrl)
+        }
         artificialDao.deleteByServerUrl(serverUrl)
         artificialDao.insertAll(entities)
         return entities.size
+    }
+
+    private fun <T> parseCsvEntities(
+        entityType: String,
+        csvContent: String,
+        mapper: (Map<String, String>) -> T?
+    ): List<T> {
+        val parsed = CsvParser.parseDetailed(csvContent)
+        val delimiterName = when (parsed.delimiter) {
+            '\t' -> "TAB"
+            ';' -> "semicolon"
+            else -> "comma"
+        }
+        val headerSummary = parsed.headers.take(18).joinToString(" | ")
+
+        debugLogger.i(
+            "CsvSync",
+            "$entityType CSV: delimiter=$delimiterName headers=${parsed.headers.size} rows=${parsed.rows.size} [$headerSummary]"
+        )
+
+        if (parsed.rows.isEmpty()) {
+            val prefix = csvContent
+                .replace("\r", " ")
+                .replace("\n", " ")
+                .take(220)
+            throw IOException(
+                "$entityType CSV contained no data rows; headers=[$headerSummary], prefix=$prefix"
+            )
+        }
+
+        val entities = parsed.rows.mapNotNull(mapper)
+        if (entities.isEmpty()) {
+            throw IOException(
+                "$entityType CSV has ${parsed.rows.size} rows but no recognizable object codes; headers=[$headerSummary]"
+            )
+        }
+
+        debugLogger.i(
+            "CsvSync",
+            "$entityType CSV accepted ${entities.size}/${parsed.rows.size} rows"
+        )
+        return entities
     }
 
     suspend fun clearByServer(serverUrl: String) {
@@ -239,74 +283,144 @@ private fun String?.toWgs84OrZero(): Double {
     return if (v in -180.0..180.0) v else 0.0
 }
 
+private fun normalizeCsvFieldName(value: String): String =
+    value.trim()
+        .lowercase()
+        .replace('à', 'a')
+        .replace('á', 'a')
+        .replace('è', 'e')
+        .replace('é', 'e')
+        .replace('ì', 'i')
+        .replace('í', 'i')
+        .replace('ò', 'o')
+        .replace('ó', 'o')
+        .replace('ù', 'u')
+        .replace('ú', 'u')
+        .filter { it.isLetterOrDigit() }
+
+private fun Map<String, String>.csvValue(vararg aliases: String): String {
+    aliases.forEach { alias ->
+        get(alias)?.takeIf { it.isNotBlank() }?.let { return it }
+    }
+
+    val wanted = aliases.map(::normalizeCsvFieldName).toSet()
+    entries.firstOrNull { normalizeCsvFieldName(it.key) in wanted }
+        ?.value
+        ?.takeIf { it.isNotBlank() }
+        ?.let { return it }
+
+    return ""
+}
+
 private fun Map<String, String>.toCaveEntity(serverUrl: String): CaveEntity? {
-    val code = get("Codice")?.takeIf { it.isNotBlank() } ?: return null
+    val code = csvValue(
+        "Codice", "code", "codice", "Codice catasto", "cave_code", "cavecode"
+    ).takeIf { it.isNotBlank() } ?: return null
+
     return CaveEntity(
         code = code,
-        name = get("Nome") ?: "",
-        synonyms = get("Sinonimi") ?: "",
-        latitude = get("Latitudine").toWgs84OrZero(),
-        longitude = get("Longitudine").toWgs84OrZero(),
-        elevation = get("Altitudine") ?: "",
-        depthPositive = get("Dislivello positivo") ?: "",
-        depthNegative = get("Dislivello negativo") ?: "",
-        depthTotal = get("Dislivello totale") ?: "",
-        lengthTotal = get("Lunghezza totale") ?: "",
-        locality = get("Località") ?: "",
-        region = get("Regione") ?: "",
-        province = get("Provincia") ?: "",
-        municipality = get("Comune") ?: "",
-        closed = get("Chiuso") ?: "",
+        name = csvValue("Nome", "name", "nome"),
+        synonyms = csvValue("Sinonimi", "synonyms", "sinonimi"),
+        latitude = csvValue(
+            "Latitudine", "latitude", "lat", "latitudine WGS84", "wgs84_latitude"
+        ).replace(",", ".").toWgs84OrZero(),
+        longitude = csvValue(
+            "Longitudine", "longitude", "lon", "lng", "longitudine WGS84", "wgs84_longitude"
+        ).replace(",", ".").toWgs84OrZero(),
+        elevation = csvValue("Altitudine", "Quota", "elevation", "altitude", "quota"),
+        depthPositive = csvValue(
+            "Dislivello positivo", "depth_positive", "dislivello_positivo", "depthPositive"
+        ),
+        depthNegative = csvValue(
+            "Dislivello negativo", "depth_negative", "dislivello_negativo", "depthNegative"
+        ),
+        depthTotal = csvValue(
+            "Dislivello totale", "Profondità totale", "depth_total",
+            "dislivello_totale", "profondita_totale", "depthTotal"
+        ),
+        lengthTotal = csvValue(
+            "Lunghezza totale", "Sviluppo", "Sviluppo totale", "length_total",
+            "lenght_total", "lunghezza_totale", "sviluppo_totale"
+        ),
+        locality = csvValue("Località", "localita", "locality"),
+        region = csvValue("Regione", "regione", "region"),
+        province = csvValue("Provincia", "provincia", "province"),
+        municipality = csvValue("Comune", "comune", "municipality"),
+        closed = csvValue("Chiuso", "chiuso", "closed"),
         serverUrl = serverUrl,
-        dbId = getOrDefault("id", "")
+        dbId = csvValue("id", "ID", "db_id", "dbid")
     )
 }
 
 private fun Map<String, String>.toSpringEntity(serverUrl: String): SpringEntity? {
-    val code = get("Codice")?.takeIf { it.isNotBlank() } ?: return null
+    val code = csvValue(
+        "Codice", "code", "codice", "Codice catasto", "spring_code", "springcode"
+    ).takeIf { it.isNotBlank() } ?: return null
+
     return SpringEntity(
         code = code,
-        name = get("Nome") ?: "",
-        latitude = get("Latitudine").toWgs84OrZero(),
-        longitude = get("Longitudine").toWgs84OrZero(),
-        elevation = get("Altitudine") ?: get("Quota") ?: "",
-        flowMax = get("Portata in piena") ?: "",
-        flowMin = get("Portata minima") ?: "",
-        flowAverage = get("Portata media") ?: "",
-        usage = get("Uso") ?: "",
-        utilization = get("Tipo") ?: "",
-        region = get("Regione") ?: "",
-        province = get("Provincia") ?: "",
-        municipality = get("Comune") ?: "",
+        name = csvValue("Nome", "name", "nome"),
+        latitude = csvValue(
+            "Latitudine", "latitude", "lat", "latitudine WGS84", "wgs84_latitude"
+        ).replace(",", ".").toWgs84OrZero(),
+        longitude = csvValue(
+            "Longitudine", "longitude", "lon", "lng", "longitudine WGS84", "wgs84_longitude"
+        ).replace(",", ".").toWgs84OrZero(),
+        elevation = csvValue("Altitudine", "Quota", "elevation", "altitude", "quota"),
+        flowMax = csvValue("Portata in piena", "flow_max", "portata_massima", "flowMax"),
+        flowMin = csvValue("Portata minima", "flow_min", "portata_minima", "flowMin"),
+        flowAverage = csvValue("Portata media", "flow_average", "portata_media", "flowAverage"),
+        usage = csvValue("Uso", "use", "usage", "uso"),
+        utilization = csvValue("Tipo", "type", "utilization", "tipo"),
+        region = csvValue("Regione", "regione", "region"),
+        province = csvValue("Provincia", "provincia", "province"),
+        municipality = csvValue("Comune", "comune", "municipality"),
         serverUrl = serverUrl
     )
 }
 
 private fun Map<String, String>.toArtificialEntityFromDevSite(serverUrl: String): ArtificialEntity? {
-    val code = get("Codice")?.takeIf { it.isNotBlank() } ?: return null
+    val code = csvValue(
+        "Codice", "code", "codice", "Codice catasto", "artificial_code", "artificialcode"
+    ).takeIf { it.isNotBlank() } ?: return null
+
     return ArtificialEntity(
         code = code,
-        name = get("Nome") ?: "",
-        synonyms = get("Sinonimi") ?: "",
-        latitude = get("Latitudine").toWgs84OrZero(),
-        longitude = get("Longitudine").toWgs84OrZero(),
-        elevation = get("Quota") ?: get("Altitudine") ?: "",
-        depthTotal = get("Profondità totale") ?: "",
-        depthNegative = get("Dislivello negativo") ?: "",
-        depthPositive = get("Dislivello positivo") ?: "",
-        lengthTotal = get("Lunghezza totale") ?: "",
-        closed = get("Chiuso") ?: "",
-        year = get("Anno") ?: "",
-        epoch = get("epoch") ?: "",
-        typology = get("Tipologia") ?: "",
-        category = get("Categoria") ?: "",
-        address = get("Indirizzo") ?: "",
-        locality = get("Località") ?: "",
-        region = get("Regione") ?: "",
-        province = get("Provincia") ?: "",
-        municipality = get("Comune") ?: "",
+        name = csvValue("Nome", "name", "nome"),
+        synonyms = csvValue("Sinonimi", "synonyms", "sinonimi"),
+        latitude = csvValue(
+            "Latitudine", "latitude", "lat", "latitudine WGS84", "wgs84_latitude"
+        ).replace(",", ".").toWgs84OrZero(),
+        longitude = csvValue(
+            "Longitudine", "longitude", "lon", "lng", "longitudine WGS84", "wgs84_longitude"
+        ).replace(",", ".").toWgs84OrZero(),
+        elevation = csvValue("Quota", "Altitudine", "elevation", "altitude", "quota"),
+        depthTotal = csvValue(
+            "Profondità totale", "Dislivello totale", "depth_total",
+            "profondita_totale", "dislivello_totale", "depthTotal"
+        ),
+        depthNegative = csvValue(
+            "Dislivello negativo", "depth_negative", "dislivello_negativo", "depthNegative"
+        ),
+        depthPositive = csvValue(
+            "Dislivello positivo", "depth_positive", "dislivello_positivo", "depthPositive"
+        ),
+        lengthTotal = csvValue(
+            "Lunghezza totale", "Sviluppo", "Sviluppo totale", "length_total",
+            "lenght_total", "lunghezza_totale", "sviluppo_totale"
+        ),
+        closed = csvValue("Chiuso", "chiuso", "closed", "Distrutta", "distrutta"),
+        year = csvValue("Anno", "year", "anno"),
+        epoch = csvValue("Epoca", "epoch", "epoca"),
+        typology = csvValue("Tipologia", "typology", "tipologia", "Tipo", "type"),
+        category = csvValue("Categoria", "category", "categoria"),
+        address = csvValue("Indirizzo", "address", "indirizzo"),
+        locality = csvValue("Località", "localita", "locality"),
+        region = csvValue("Regione", "regione", "region"),
+        province = csvValue("Provincia", "provincia", "province"),
+        municipality = csvValue("Comune", "comune", "municipality"),
         serverUrl = serverUrl,
-        dbId = getOrDefault("id", "")
+        dbId = csvValue("id", "ID", "db_id", "dbid")
     )
 }
 
