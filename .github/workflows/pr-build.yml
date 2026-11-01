@@ -13,6 +13,37 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Inspect Liguria API shapes
+        shell: bash
+        run: |
+          set +e
+          base="https://www.catastogrotte.net/liguria"
+          for path in "/openkis_json.php?mod=caves" "/openkis_API.php?mod=caves"; do
+            url="$base$path"
+            curl -sS -L --max-time 60 "$url" -o /tmp/data.json
+            echo "=== $path bytes=$(wc -c < /tmp/data.json) ==="
+            python3 - <<'PY'
+import json
+raw=open("/tmp/data.json","rb").read()
+print("prefix",repr(raw[:180]))
+try:
+    d=json.loads(raw)
+    print("type",type(d).__name__)
+    if isinstance(d,dict):
+        print("keys",list(d)[:20])
+        items=d.get("items")
+        print("items",len(items) if isinstance(items,list) else None,"count",d.get("count"))
+        if isinstance(items,list) and items:
+            print("first_keys",list(items[0])[:40])
+except Exception as e:
+    print("json_error",repr(e))
+PY
+          done
+          curl -sS -L --max-time 60 "$base/it/caves/?export=1" -D /tmp/csvh -o /tmp/caves.csv
+          echo "=== CSV bytes=$(wc -c < /tmp/caves.csv) lines=$(wc -l < /tmp/caves.csv) ==="
+          grep -iE '^(content-type|content-disposition):' /tmp/csvh | tail -10 || true
+          head -3 /tmp/caves.csv | cut -c1-900
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
