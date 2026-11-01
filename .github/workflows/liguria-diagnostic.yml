@@ -1,0 +1,30 @@
+name: Liguria API diagnostic
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe Liguria public and API endpoints
+        shell: bash
+        run: |
+          set +e
+          base="https://www.catastogrotte.net/liguria"
+          for path in             "/it/caves/"             "/index.php?mod=caves"             "/openkis_json.php?mod=caves"             "/openkis_API.php?mod=caves"             "/openkis_kml.php?mod=caves"; do
+            url="$base$path"
+            echo "===== $url ====="
+            curl -sS -L --max-time 45 -D /tmp/h -o /tmp/b "$url"
+            awk 'toupper($1) ~ /^HTTP\// {code=$2} END {print "HTTP", code}' /tmp/h
+            grep -iE '^(content-type|location|server|set-cookie):' /tmp/h | tail -20 || true
+            echo "BODY PREFIX:"
+            head -c 500 /tmp/b | tr '\n' ' '; echo
+            echo
+          done
+
+          echo "===== export links from public caves page ====="
+          curl -sS -L --max-time 45 "$base/it/caves/" -o /tmp/caves.html
+          grep -oiE 'href=["'"'"'][^"'"'"']*(csv|export)[^"'"'"']*["'"'"']' /tmp/caves.html | head -30 || true
+          grep -niE 'CSV|export' /tmp/caves.html | tail -40 || true
