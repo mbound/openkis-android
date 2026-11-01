@@ -20,7 +20,7 @@ object CsvParser {
     fun parse(raw: String): List<Map<String, String>> = parseDetailed(raw).rows
 
     fun parseDetailed(raw: String): ParseResult {
-        var content = raw.removePrefix("﻿")
+        var content = raw.removePrefix("\uFEFF")
         val explicitDelimiter = content.lineSequence()
             .firstOrNull()
             ?.trim()
@@ -28,8 +28,7 @@ object CsvParser {
             ?.last()
 
         if (explicitDelimiter != null) {
-            content = content.substringAfter('
-', "")
+            content = content.substringAfter('\n', "")
         }
 
         val delimiter = explicitDelimiter ?: detectDelimiter(content)
@@ -41,7 +40,7 @@ object CsvParser {
         }
 
         val headers = rows[headerIdx].mapIndexed { index, value ->
-            value.removePrefix("﻿").trim().ifBlank { "column_$index" }
+            value.removePrefix("\uFEFF").trim().ifBlank { "column_$index" }
         }
 
         val mapped = rows.drop(headerIdx + 1)
@@ -100,7 +99,7 @@ object CsvParser {
 
         if (sampleLines.isEmpty()) return ','
 
-        return listOf(',', ';', '	')
+        return listOf(',', ';', '\t')
             .maxByOrNull { delimiter ->
                 sampleLines.sumOf { countUnquoted(it, delimiter) }
             }
@@ -159,14 +158,12 @@ object CsvParser {
                         emitField()
                         i++
                     }
-                    '' -> {
+                    '\r' -> {
                         val next = content.getOrNull(i + 1)
                         emitRow()
-                        i += if (next == '
-') 2 else 1
+                        i += if (next == '\n') 2 else 1
                     }
-                    '
-' -> {
+                    '\n' -> {
                         emitRow()
                         i++
                     }
@@ -183,15 +180,13 @@ object CsvParser {
                         state = State.FIELD_START
                         i++
                     }
-                    '' -> {
+                    '\r' -> {
                         val next = content.getOrNull(i + 1)
                         emitRow()
                         state = State.FIELD_START
-                        i += if (next == '
-') 2 else 1
+                        i += if (next == '\n') 2 else 1
                     }
-                    '
-' -> {
+                    '\n' -> {
                         emitRow()
                         state = State.FIELD_START
                         i++
@@ -224,15 +219,13 @@ object CsvParser {
                         state = State.FIELD_START
                         i++
                     }
-                    '' -> {
+                    '\r' -> {
                         val next = content.getOrNull(i + 1)
                         emitRow()
                         state = State.FIELD_START
-                        i += if (next == '
-') 2 else 1
+                        i += if (next == '\n') 2 else 1
                     }
-                    '
-' -> {
+                    '\n' -> {
                         emitRow()
                         state = State.FIELD_START
                         i++
