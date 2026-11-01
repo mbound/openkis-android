@@ -1,43 +1,135 @@
 package org.openkis.android.data.remote
 
 /**
- * Minimal RFC4180 CSV parser for the dev.catastogrotte-piemonte.net export format.
+ * Small RFC4180-style CSV parser used by the Piemonte export backend.
  *
- * The export CSVs have an unusual structure:
- *   Row 0 — numeric column indices (0,1,2,…N)  ← skipped
- *   Row 1 — column header names                ← used as map keys
- *   Row 2+ — data rows
- *
- * UTF-8 BOM is stripped if present.
+ * The backend has existed in more than one export shape, so this parser accepts:
+ * - comma, semicolon, or tab delimiters (auto-detected)
+ * - an optional Excel-style "sep=;" first line
+ * - the older numeric-index row ("0,1,2,…") before the real header
+ * - UTF-8 BOM
  */
 object CsvParser {
 
-    fun parse(raw: String): List<Map<String, String>> {
-        val content = raw.removePrefix("﻿")
-        val rows = parseRows(content)
+    data class ParseResult(
+        val delimiter: Char,
+        val headers: List<String>,
+        val rows: List<Map<String, String>>
+    )
 
-        // The first row whose first cell is not a plain integer is the header row.
-        // (Row 0 is always "0,1,2,…" — we skip it.)
-        val headerIdx = rows.indexOfFirst { row ->
-            row.isNotEmpty() && row[0].trim().toIntOrNull() == null
+    fun parse(raw: String): List<Map<String, String>> = parseDetailed(raw).rows
+
+    fun parseDetailed(raw: String): ParseResult {
+        var content = raw.removePrefix("﻿")
+        val explicitDelimiter = content.lineSequence()
+            .firstOrNull()
+            ?.trim()
+            ?.takeIf { it.length == 5 && it.startsWith("sep=", ignoreCase = true) }
+            ?.last()
+
+        if (explicitDelimiter != null) {
+            content = content.substringAfter('
+', "")
         }
-        if (headerIdx < 0) return emptyList()
 
-        val headers = rows[headerIdx].map { it.trim() }
-        return rows.drop(headerIdx + 1)
+        val delimiter = explicitDelimiter ?: detectDelimiter(content)
+        val rows = parseRows(content, delimiter)
+
+        val headerIdx = rows.indexOfFirst { row -> isLikelyHeader(row) }
+        if (headerIdx < 0) {
+            return ParseResult(delimiter, emptyList(), emptyList())
+        }
+
+        val headers = rows[headerIdx].mapIndexed { index, value ->
+            value.removePrefix("﻿").trim().ifBlank { "column_$index" }
+        }
+
+        val mapped = rows.drop(headerIdx + 1)
             .filter { row -> row.any { it.isNotBlank() } }
             .map { row ->
                 buildMap {
                     headers.forEachIndexed { i, header ->
-                        put(header, if (i < row.size) row[i] else "")
+                        put(header, if (i < row.size) row[i].trim() else "")
                     }
                 }
             }
+
+        return ParseResult(delimiter, headers, mapped)
+    }
+
+    private fun isLikelyHeader(row: List<String>): Boolean {
+        if (row.size < 2) return false
+
+        // Old exporter emits a row containing only numeric column indexes before
+        // the real header.
+        if (row.all { it.trim().toIntOrNull() != null }) return false
+
+        val normalized = row.map(::normalizeHeader)
+        val known = setOf(
+            "codice", "code", "nome", "name", "id",
+            "latitudine", "latitude", "lat",
+            "longitudine", "longitude", "lon", "lng",
+            "quota", "altitudine", "elevation"
+        )
+
+        return normalized.any { it in known } ||
+            // Fallback for future schemas: the first non-numeric multi-column row.
+            row.count { it.isNotBlank() } >= 2
+    }
+
+    private fun normalizeHeader(value: String): String =
+        value.trim()
+            .lowercase()
+            .replace('à', 'a')
+            .replace('á', 'a')
+            .replace('è', 'e')
+            .replace('é', 'e')
+            .replace('ì', 'i')
+            .replace('í', 'i')
+            .replace('ò', 'o')
+            .replace('ó', 'o')
+            .replace('ù', 'u')
+            .replace('ú', 'u')
+            .filter { it.isLetterOrDigit() }
+
+    private fun detectDelimiter(content: String): Char {
+        val sampleLines = content.lineSequence()
+            .filter { it.isNotBlank() }
+            .take(5)
+            .toList()
+
+        if (sampleLines.isEmpty()) return ','
+
+        return listOf(',', ';', '	')
+            .maxByOrNull { delimiter ->
+                sampleLines.sumOf { countUnquoted(it, delimiter) }
+            }
+            ?: ','
+    }
+
+    private fun countUnquoted(line: String, delimiter: Char): Int {
+        var quoted = false
+        var count = 0
+        var i = 0
+        while (i < line.length) {
+            when (line[i]) {
+                '"' -> {
+                    if (quoted && line.getOrNull(i + 1) == '"') {
+                        i++
+                    } else {
+                        quoted = !quoted
+                    }
+                }
+                delimiter -> if (!quoted) count++
+            }
+            i++
+        }
+        return count
     }
 
     private enum class State { FIELD_START, IN_FIELD, IN_QUOTED, AFTER_QUOTE }
 
-    private fun parseRows(content: String): List<List<String>> {
+    private fun parseRows(content: String, delimiter: Char): List<List<String>> {
         val rows = mutableListOf<List<String>>()
         val currentRow = mutableListOf<String>()
         val currentField = StringBuilder()
@@ -51,7 +143,7 @@ object CsvParser {
 
         fun emitRow() {
             emitField()
-            if (currentRow.isNotEmpty()) rows.add(currentRow.toList())
+            if (currentRow.any { it.isNotBlank() }) rows.add(currentRow.toList())
             currentRow.clear()
         }
 
@@ -59,32 +151,103 @@ object CsvParser {
             val ch = content[i]
             when (state) {
                 State.FIELD_START -> when (ch) {
-                    '"' -> { state = State.IN_QUOTED; i++ }
-                    ',' -> { emitField(); i++ }
-                    '\r' -> { val next = content.getOrNull(i + 1); emitRow(); i += if (next == '\n') 2 else 1 }
-                    '\n' -> { emitRow(); i++ }
-                    else -> { currentField.append(ch); state = State.IN_FIELD; i++ }
+                    '"' -> {
+                        state = State.IN_QUOTED
+                        i++
+                    }
+                    delimiter -> {
+                        emitField()
+                        i++
+                    }
+                    '' -> {
+                        val next = content.getOrNull(i + 1)
+                        emitRow()
+                        i += if (next == '
+') 2 else 1
+                    }
+                    '
+' -> {
+                        emitRow()
+                        i++
+                    }
+                    else -> {
+                        currentField.append(ch)
+                        state = State.IN_FIELD
+                        i++
+                    }
                 }
+
                 State.IN_FIELD -> when (ch) {
-                    ',' -> { emitField(); state = State.FIELD_START; i++ }
-                    '\r' -> { val next = content.getOrNull(i + 1); emitRow(); state = State.FIELD_START; i += if (next == '\n') 2 else 1 }
-                    '\n' -> { emitRow(); state = State.FIELD_START; i++ }
-                    else -> { currentField.append(ch); i++ }
+                    delimiter -> {
+                        emitField()
+                        state = State.FIELD_START
+                        i++
+                    }
+                    '' -> {
+                        val next = content.getOrNull(i + 1)
+                        emitRow()
+                        state = State.FIELD_START
+                        i += if (next == '
+') 2 else 1
+                    }
+                    '
+' -> {
+                        emitRow()
+                        state = State.FIELD_START
+                        i++
+                    }
+                    else -> {
+                        currentField.append(ch)
+                        i++
+                    }
                 }
+
                 State.IN_QUOTED -> when (ch) {
-                    '"' -> { state = State.AFTER_QUOTE; i++ }
-                    else -> { currentField.append(ch); i++ }
+                    '"' -> {
+                        state = State.AFTER_QUOTE
+                        i++
+                    }
+                    else -> {
+                        currentField.append(ch)
+                        i++
+                    }
                 }
+
                 State.AFTER_QUOTE -> when (ch) {
-                    '"' -> { currentField.append('"'); state = State.IN_QUOTED; i++ }
-                    ',' -> { emitField(); state = State.FIELD_START; i++ }
-                    '\r' -> { val next = content.getOrNull(i + 1); emitRow(); state = State.FIELD_START; i += if (next == '\n') 2 else 1 }
-                    '\n' -> { emitRow(); state = State.FIELD_START; i++ }
-                    else -> { currentField.append(ch); state = State.IN_FIELD; i++ }
+                    '"' -> {
+                        currentField.append('"')
+                        state = State.IN_QUOTED
+                        i++
+                    }
+                    delimiter -> {
+                        emitField()
+                        state = State.FIELD_START
+                        i++
+                    }
+                    '' -> {
+                        val next = content.getOrNull(i + 1)
+                        emitRow()
+                        state = State.FIELD_START
+                        i += if (next == '
+') 2 else 1
+                    }
+                    '
+' -> {
+                        emitRow()
+                        state = State.FIELD_START
+                        i++
+                    }
+                    else -> {
+                        // Be permissive about whitespace or other characters after
+                        // a closing quote.
+                        currentField.append(ch)
+                        state = State.IN_FIELD
+                        i++
+                    }
                 }
             }
         }
-        // Flush any trailing content
+
         if (currentField.isNotEmpty() || currentRow.isNotEmpty()) emitRow()
         return rows
     }
