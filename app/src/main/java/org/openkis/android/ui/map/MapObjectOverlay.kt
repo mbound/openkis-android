@@ -220,7 +220,6 @@ class MapObjectOverlay(
         var bestPoint: MapRenderPoint? = null
         var bestDistance = Float.MAX_VALUE
 
-        val density = mapView.resources.displayMetrics.density
         val zoom = mapView.zoomLevelDouble
         val cellDp = when {
             zoom < 8.0 -> 24
