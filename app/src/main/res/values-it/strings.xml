@@ -38,7 +38,7 @@
     <string name="label_flow_min">Portata minima</string>
     <string name="label_flow_avg">Portata media</string>
     <string name="label_usage">Stato sorgente</string>
-    <string name="label_utilization">Uso dell'acqua</string>
+    <string name="label_utilization">Uso dell\'acqua</string>
     <string name="label_linked_cave">Numero grotta</string>
 
     <!-- Field labels — artificials -->
