@@ -272,10 +272,10 @@
     <string name="filter_measurements_desc">Lo sviluppo usa il campo Sviluppo reale, cioè la somma delle lunghezze rilevate in 3D. Il dislivello usa Dislivello totale. Un valore mancante o non leggibile non soddisfa quel criterio: con AND l’oggetto è escluso; con OR può soddisfare un altro criterio.</string>
     <string name="filter_min_depth">Dislivello totale minimo</string>
     <string name="filter_min_length">Sviluppo reale minimo</string>
-    <string name="filter_min_elevation">Quota minima</string>
-    <string name="filter_max_elevation">Quota massima</string>
+    <string name="filter_min_elevation">Quota altimetrica minima</string>
+    <string name="filter_max_elevation">Quota altimetrica massima</string>
     <string name="map_search_title">Cerca sulla mappa</string>
-    <string name="map_search_hint">Grotta, codice, città o luogo</string>
+    <string name="map_search_hint">Grotta, numero, città o luogo</string>
     <string name="map_search_places">Cerca luoghi</string>
     <string name="map_search_objects">Oggetti</string>
     <string name="map_search_no_places">Nessun luogo corrispondente trovato.</string>
