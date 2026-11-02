@@ -27,36 +27,36 @@ enum class FilterMatchMode {
 }
 
 data class ObjectNumericFilters(
-    val minDepthMeters: String = "",
-    val minLengthMeters: String = "",
+    val minVerticalExtentMeters: String = "",
+    val minDevelopmentMeters: String = "",
     val minElevationMeters: String = "",
     val maxElevationMeters: String = "",
     val matchMode: FilterMatchMode = FilterMatchMode.ALL
 ) {
-    private val minDepth = minDepthMeters.toFilterNumber()
-    private val minLength = minLengthMeters.toFilterNumber()
+    private val minVerticalExtent = minVerticalExtentMeters.toFilterNumber()
+    private val minDevelopment = minDevelopmentMeters.toFilterNumber()
     private val minElevation = minElevationMeters.toFilterNumber()
     private val maxElevation = maxElevationMeters.toFilterNumber()
 
     val isActive: Boolean
-        get() = minDepth != null ||
-            minLength != null ||
+        get() = minVerticalExtent != null ||
+            minDevelopment != null ||
             minElevation != null ||
             maxElevation != null
 
     fun matches(
-        depth: String?,
-        length: String?,
+        verticalExtent: String?,
+        development: String?,
         elevation: String?
     ): Boolean {
         val criteria = ArrayList<Boolean>(4)
 
-        minDepth?.let { threshold ->
-            val value = depth.toMeasurementNumber()?.let(::abs)
+        minVerticalExtent?.let { threshold ->
+            val value = verticalExtent.toMeasurementNumber()?.let(::abs)
             criteria += value != null && value >= threshold
         }
-        minLength?.let { threshold ->
-            val value = length.toMeasurementNumber()
+        minDevelopment?.let { threshold ->
+            val value = development.toMeasurementNumber()
             criteria += value != null && value >= threshold
         }
         minElevation?.let { threshold ->
@@ -92,8 +92,8 @@ fun NumericFilterDialog(
     onDismiss: () -> Unit,
     onApply: (ObjectNumericFilters) -> Unit
 ) {
-    var depth by remember(initial) { mutableStateOf(initial.minDepthMeters) }
-    var length by remember(initial) { mutableStateOf(initial.minLengthMeters) }
+    var verticalExtent by remember(initial) { mutableStateOf(initial.minVerticalExtentMeters) }
+    var development by remember(initial) { mutableStateOf(initial.minDevelopmentMeters) }
     var minElevation by remember(initial) { mutableStateOf(initial.minElevationMeters) }
     var maxElevation by remember(initial) { mutableStateOf(initial.maxElevationMeters) }
     var matchMode by remember(initial) { mutableStateOf(initial.matchMode) }
@@ -137,16 +137,16 @@ fun NumericFilterDialog(
                     )
                 }
                 OutlinedTextField(
-                    value = depth,
-                    onValueChange = { depth = it },
+                    value = verticalExtent,
+                    onValueChange = { verticalExtent = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.filter_min_depth)) },
                     suffix = { Text("m") },
                     singleLine = true
                 )
                 OutlinedTextField(
-                    value = length,
-                    onValueChange = { length = it },
+                    value = development,
+                    onValueChange = { development = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.filter_min_length)) },
                     suffix = { Text("m") },
@@ -175,8 +175,8 @@ fun NumericFilterDialog(
                 onClick = {
                     onApply(
                         ObjectNumericFilters(
-                            minDepthMeters = depth.trim(),
-                            minLengthMeters = length.trim(),
+                            minVerticalExtentMeters = verticalExtent.trim(),
+                            minDevelopmentMeters = development.trim(),
                             minElevationMeters = minElevation.trim(),
                             maxElevationMeters = maxElevation.trim(),
                             matchMode = matchMode
