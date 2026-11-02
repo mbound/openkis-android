@@ -9,7 +9,12 @@ import android.view.MotionEvent
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Overlay
+import kotlin.math.PI
+import kotlin.math.floor
+import kotlin.math.ln
 import kotlin.math.max
+import kotlin.math.pow
+import kotlin.math.sin
 
 data class MapRenderPoint(
     val type: String,
@@ -45,6 +50,11 @@ class MapObjectOverlay(
         style = Paint.Style.FILL
     }
 
+    private var sampledSource: List<MapRenderPoint>? = null
+    private var sampledZoomFloor: Int = Int.MIN_VALUE
+    private var sampledCellDp: Int = Int.MIN_VALUE
+    private var sampledPoints: List<MapRenderPoint> = emptyList()
+
     override fun draw(canvas: Canvas, mapView: MapView, shadow: Boolean) {
         if (shadow || points.isEmpty()) return
 
@@ -54,13 +64,18 @@ class MapObjectOverlay(
         val scaledDensity = mapView.resources.displayMetrics.scaledDensity
         val zoom = mapView.zoomLevelDouble
         val showLabels = zoom >= 15.0
-        val cellPx = when {
-            zoom < 8.0 -> 24f * density
-            zoom < 11.0 -> 16f * density
-            zoom < 13.0 -> 10f * density
-            else -> 0f
+        val cellDp = when {
+            zoom < 8.0 -> 24
+            zoom < 11.0 -> 16
+            zoom < 13.0 -> 10
+            else -> 0
         }
-        val occupiedCells = if (cellPx > 0f) HashSet<Long>() else null
+        val pointsToDraw = stableSampledPoints(
+            source = points,
+            zoom = zoom,
+            density = density,
+            cellDp = cellDp
+        )
 
         labelTextPaint.textSize = 11f * scaledDensity
         val labelMetrics = labelTextPaint.fontMetrics
@@ -70,7 +85,7 @@ class MapObjectOverlay(
         val labelOffset = 6f * density
         var labelsDrawn = 0
 
-        for (point in points) {
+        for (point in pointsToDraw) {
             if (!boundingBox.contains(point.position)) continue
 
             projection.toPixels(point.position, screenPoint)
@@ -84,12 +99,6 @@ class MapObjectOverlay(
             }
 
             val selected = selectedType == point.type && selectedCode == point.code
-            if (!selected && occupiedCells != null) {
-                val cellX = (screenPoint.x / cellPx).toInt()
-                val cellY = (screenPoint.y / cellPx).toInt()
-                val key = (cellX.toLong() shl 32) xor (cellY.toLong() and 0xffffffffL)
-                if (!occupiedCells.add(key)) continue
-            }
 
             val bitmap = compositor.bitmap(point.iconCategory, point.iconLayers)
             val left = screenPoint.x - bitmap.width / 2f
@@ -140,6 +149,66 @@ class MapObjectOverlay(
         }
     }
 
+    private fun stableSampledPoints(
+        source: List<MapRenderPoint>,
+        zoom: Double,
+        density: Float,
+        cellDp: Int
+    ): List<MapRenderPoint> {
+        if (cellDp <= 0) return source
+
+        val zoomFloor = floor(zoom).toInt().coerceIn(0, 22)
+        if (
+            sampledSource === source &&
+            sampledZoomFloor == zoomFloor &&
+            sampledCellDp == cellDp
+        ) {
+            return withSelectedPoint(sampledPoints, source)
+        }
+
+        val worldPixels = 256.0 * 2.0.pow(zoomFloor.toDouble())
+        val cellPixels = (cellDp * density).coerceAtLeast(1f).toDouble()
+        val cellsPerWorld = (worldPixels / cellPixels).coerceAtLeast(1.0)
+        val occupied = HashSet<Long>()
+        val sampled = ArrayList<MapRenderPoint>()
+
+        for (point in source) {
+            val lonNorm = ((point.position.longitude + 180.0) / 360.0)
+                .coerceIn(0.0, 0.999999999)
+            val lat = point.position.latitude.coerceIn(-85.05112878, 85.05112878)
+            val latRad = Math.toRadians(lat)
+            val mercatorY =
+                (1.0 - ln((1.0 + sin(latRad)) / (1.0 - sin(latRad))) / (2.0 * PI)) / 2.0
+            val x = floor(lonNorm * cellsPerWorld).toLong()
+            val y = floor(mercatorY.coerceIn(0.0, 0.999999999) * cellsPerWorld).toLong()
+            val key = (x shl 32) xor (y and 0xffffffffL)
+
+            if (occupied.add(key)) {
+                sampled += point
+            }
+        }
+
+        sampledSource = source
+        sampledZoomFloor = zoomFloor
+        sampledCellDp = cellDp
+        sampledPoints = sampled
+        return withSelectedPoint(sampled, source)
+    }
+
+    private fun withSelectedPoint(
+        sampled: List<MapRenderPoint>,
+        source: List<MapRenderPoint>
+    ): List<MapRenderPoint> {
+        val type = selectedType ?: return sampled
+        val code = selectedCode ?: return sampled
+        if (sampled.any { it.type == type && it.code == code }) return sampled
+
+        val selected = source.firstOrNull { it.type == type && it.code == code }
+            ?: return sampled
+
+        return sampled + selected
+    }
+
     override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
         if (points.isEmpty()) return false
 
@@ -151,7 +220,22 @@ class MapObjectOverlay(
         var bestPoint: MapRenderPoint? = null
         var bestDistance = Float.MAX_VALUE
 
-        for (point in points) {
+        val density = mapView.resources.displayMetrics.density
+        val zoom = mapView.zoomLevelDouble
+        val cellDp = when {
+            zoom < 8.0 -> 24
+            zoom < 11.0 -> 16
+            zoom < 13.0 -> 10
+            else -> 0
+        }
+        val pointsToHitTest = stableSampledPoints(
+            source = points,
+            zoom = zoom,
+            density = density,
+            cellDp = cellDp
+        )
+
+        for (point in pointsToHitTest) {
             if (!boundingBox.contains(point.position)) continue
             projection.toPixels(point.position, screenPoint)
 
