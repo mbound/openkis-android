@@ -10,9 +10,11 @@ data class ArtificialEntity(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val elevation: String = "",
+    // Legacy OpenKIS field depth_total: Dislivello totale / total vertical extent.
     val depthTotal: String = "",
     val depthNegative: String = "",
     val depthPositive: String = "",
+    // Legacy OpenKIS field lenght_total: Sviluppo reale / surveyed 3D development.
     val lengthTotal: String = "",
     val closed: String = "",
     val year: String = "",
