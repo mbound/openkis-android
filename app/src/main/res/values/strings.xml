@@ -14,21 +14,21 @@
     <string name="type_springs">Karst Springs</string>
 
     <!-- Field labels — shared -->
-    <string name="label_code">Code</string>
+    <string name="label_code">Catalogue number</string>
     <string name="label_name">Name</string>
-    <string name="label_synonyms">Synonyms</string>
+    <string name="label_synonyms">Alternate names</string>
     <string name="label_elevation">Elevation</string>
-    <string name="label_depth">Depth</string>
-    <string name="label_depth_positive">Depth (ascending)</string>
-    <string name="label_depth_negative">Depth (descending)</string>
-    <string name="label_length">Length</string>
+    <string name="label_depth">Total vertical extent</string>
+    <string name="label_depth_positive">Positive vertical extent</string>
+    <string name="label_depth_negative">Negative vertical extent</string>
+    <string name="label_length">Development</string>
     <string name="label_coordinates">Coordinates</string>
     <string name="label_region">Region</string>
     <string name="label_province">Province</string>
     <string name="label_municipality">Municipality</string>
     <string name="label_locality">Locality</string>
     <string name="label_description">Description</string>
-    <string name="label_closed">Closed</string>
+    <string name="label_closed">Closed cavity</string>
     <string name="label_address">Address</string>
 
     <!-- Field labels — caves -->
@@ -36,23 +36,23 @@
     <string name="label_meteorology">Meteorology</string>
 
     <!-- Field labels — springs -->
-    <string name="label_flow_max">Max Flow</string>
-    <string name="label_flow_min">Min Flow</string>
-    <string name="label_flow_avg">Avg Flow</string>
-    <string name="label_usage">Usage</string>
-    <string name="label_utilization">Utilization</string>
-    <string name="label_linked_cave">Linked Cave</string>
+    <string name="label_flow_max">Maximum flow</string>
+    <string name="label_flow_min">Minimum flow</string>
+    <string name="label_flow_avg">Average flow</string>
+    <string name="label_usage">Spring status</string>
+    <string name="label_utilization">Water use</string>
+    <string name="label_linked_cave">Cave number</string>
 
     <!-- Field labels — artificials -->
-    <string name="label_year">Year</string>
+    <string name="label_year">Construction year</string>
     <string name="label_epoch">Epoch</string>
-    <string name="label_typology">Typology</string>
+    <string name="label_typology">Typologies</string>
     <string name="label_category">Category</string>
 
     <!-- Detail highlight chips -->
     <string name="highlight_elevation">Elevation</string>
-    <string name="highlight_length">Length</string>
-    <string name="highlight_depth">Depth</string>
+    <string name="highlight_length">Development</string>
+    <string name="highlight_depth">Total vertical extent</string>
     <string name="highlight_avg_flow">Avg Flow</string>
     <string name="highlight_max_flow">Max Flow</string>
 
@@ -280,9 +280,9 @@
     <string name="apply">Apply</string>
     <string name="clear">Clear</string>
     <string name="filter_measurements_title">Measurement filters</string>
-    <string name="filter_measurements_desc">Depth uses absolute value. A missing or unreadable value never matches that criterion: AND excludes the object; OR can still match another criterion.</string>
-    <string name="filter_min_depth">Minimum depth</string>
-    <string name="filter_min_length">Minimum length</string>
+    <string name="filter_measurements_desc">Development uses the source Sviluppo reale / total surveyed 3D passage length. Vertical extent uses Dislivello totale. Missing or unreadable values do not satisfy that criterion: AND excludes the object; OR can still match another criterion.</string>
+    <string name="filter_min_depth">Minimum total vertical extent</string>
+    <string name="filter_min_length">Minimum development</string>
     <string name="filter_min_elevation">Minimum elevation</string>
     <string name="filter_max_elevation">Maximum elevation</string>
     <string name="map_search_title">Search map</string>
