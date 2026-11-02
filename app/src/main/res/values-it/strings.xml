@@ -12,21 +12,21 @@
     <string name="type_springs">Sorgenti carsiche</string>
 
     <!-- Field labels — shared -->
-    <string name="label_code">Codice</string>
+    <string name="label_code">Numero</string>
     <string name="label_name">Nome</string>
-    <string name="label_synonyms">Sinonimi</string>
-    <string name="label_elevation">Quota</string>
-    <string name="label_depth">Profondità</string>
-    <string name="label_depth_positive">Profondità (ascendente)</string>
-    <string name="label_depth_negative">Profondità (discendente)</string>
-    <string name="label_length">Lunghezza</string>
+    <string name="label_synonyms">Altre denominazioni</string>
+    <string name="label_elevation">Quota altimetrica</string>
+    <string name="label_depth">Dislivello totale</string>
+    <string name="label_depth_positive">Dislivello positivo</string>
+    <string name="label_depth_negative">Dislivello negativo</string>
+    <string name="label_length">Sviluppo reale</string>
     <string name="label_coordinates">Coordinate</string>
     <string name="label_region">Regione</string>
     <string name="label_province">Provincia</string>
     <string name="label_municipality">Comune</string>
     <string name="label_locality">Località</string>
     <string name="label_description">Descrizione</string>
-    <string name="label_closed">Chiusa</string>
+    <string name="label_closed">Cavità chiusa</string>
     <string name="label_address">Indirizzo</string>
 
     <!-- Field labels — caves -->
@@ -37,20 +37,20 @@
     <string name="label_flow_max">Portata massima</string>
     <string name="label_flow_min">Portata minima</string>
     <string name="label_flow_avg">Portata media</string>
-    <string name="label_usage">Utilizzo</string>
-    <string name="label_utilization">Sfruttamento</string>
-    <string name="label_linked_cave">Cavità collegata</string>
+    <string name="label_usage">Stato sorgente</string>
+    <string name="label_utilization">Uso dell\'acqua</string>
+    <string name="label_linked_cave">Numero grotta</string>
 
     <!-- Field labels — artificials -->
-    <string name="label_year">Anno</string>
+    <string name="label_year">Anno di costruzione</string>
     <string name="label_epoch">Epoca</string>
-    <string name="label_typology">Tipologia</string>
+    <string name="label_typology">Tipologie</string>
     <string name="label_category">Categoria</string>
 
     <!-- Detail highlight chips -->
-    <string name="highlight_elevation">Quota</string>
-    <string name="highlight_length">Lunghezza</string>
-    <string name="highlight_depth">Profondità</string>
+    <string name="highlight_elevation">Quota altimetrica</string>
+    <string name="highlight_length">Sviluppo reale</string>
+    <string name="highlight_depth">Dislivello totale</string>
     <string name="highlight_avg_flow">Portata media</string>
     <string name="highlight_max_flow">Portata max</string>
 
@@ -269,13 +269,13 @@
     <string name="apply">Applica</string>
     <string name="clear">Cancella</string>
     <string name="filter_measurements_title">Filtri dimensionali</string>
-    <string name="filter_measurements_desc">La profondità usa il valore assoluto. Un valore mancante o non leggibile non soddisfa quel criterio: con AND l’oggetto è escluso; con OR può soddisfare un altro criterio.</string>
-    <string name="filter_min_depth">Profondità minima</string>
-    <string name="filter_min_length">Lunghezza minima</string>
-    <string name="filter_min_elevation">Quota minima</string>
-    <string name="filter_max_elevation">Quota massima</string>
+    <string name="filter_measurements_desc">Lo sviluppo usa il campo Sviluppo reale, cioè la somma delle lunghezze rilevate in 3D. Il dislivello usa Dislivello totale. Un valore mancante o non leggibile non soddisfa quel criterio: con AND l’oggetto è escluso; con OR può soddisfare un altro criterio.</string>
+    <string name="filter_min_depth">Dislivello totale minimo</string>
+    <string name="filter_min_length">Sviluppo reale minimo</string>
+    <string name="filter_min_elevation">Quota altimetrica minima</string>
+    <string name="filter_max_elevation">Quota altimetrica massima</string>
     <string name="map_search_title">Cerca sulla mappa</string>
-    <string name="map_search_hint">Grotta, codice, città o luogo</string>
+    <string name="map_search_hint">Grotta, numero, città o luogo</string>
     <string name="map_search_places">Cerca luoghi</string>
     <string name="map_search_objects">Oggetti</string>
     <string name="map_search_no_places">Nessun luogo corrispondente trovato.</string>
